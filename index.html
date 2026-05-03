@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<!-- ══ SECURITY HEADERS (also add these in GitHub Pages via _headers file) ══ -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src  'self' https://cdn.jsdelivr.net https://unpkg.com;
+  style-src   'self' https://fonts.googleapis.com https://unpkg.com 'unsafe-inline';
+  font-src    'self' https://fonts.gstatic.com;
+  img-src     'self' data: https://*.tile.openstreetmap.org https://*.openstreetmap.org;
+  connect-src 'self' https://*.supabase.co wss://*.supabase.co
+              https://nominatim.openstreetmap.org
+              https://*.tile.openstreetmap.org;
+  frame-ancestors 'none';
+  base-uri 'self';
+  form-action 'self';
+">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta http-equiv="Permissions-Policy" content="geolocation=(self), camera=(), microphone=()">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="The Table">
+<meta name="theme-color" content="#3d2b1f">
+<title>The Table</title>
+
+<!-- PWA / Icons -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- App styles -->
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     AUTH SCREEN
+════════════════════════════════════════════ -->
+<div id="auth-screen" class="screen">
+  <div class="auth-logo">The <em>Table</em></div>
+  <div class="auth-tagline">Your personal restaurant journal</div>
+
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-form="signin-form">Sign In</button>
+      <button class="auth-tab" data-form="signup-form">Sign Up</button>
+    </div>
+
+    <!-- Sign In -->
+    <div class="auth-form active" id="signin-form">
+      <div class="auth-error" id="signin-error"></div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="si-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="si-password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-primary" id="signin-btn" data-label="Sign In" style="width:100%">Sign In</button>
+    </div>
+
+    <!-- Sign Up -->
+    <div class="auth-form" id="signup-form">
+      <div class="auth-error" id="signup-error"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Username *</label>
+          <input type="text" id="su-username" placeholder="foodie_ali" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>Display Name</label>
+          <input type="text" id="su-name" placeholder="Ali" autocomplete="name">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email *</label>
+        <input type="email" id="su-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Password *</label>
+        <input type="password" id="su-password" placeholder="Min. 6 characters" autocomplete="new-password">
+      </div>
+      <button class="btn-primary" id="signup-btn" data-label="Create Account" style="width:100%">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     APP SCREEN
+════════════════════════════════════════════ -->
+<div id="app-screen" class="screen">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-row">
+      <div class="app-logo">The <em>Table</em></div>
+      <div class="header-actions">
+        <button class="icon-btn" id="add-restaurant-btn" title="Add Restaurant">＋🍽</button>
+        <button class="icon-btn" id="add-dish-btn" title="Add Dish">＋🥘</button>
+        <button class="icon-btn" id="signout-btn" title="Sign Out">⎋</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content area -->
+  <div class="app-content">
+
+    <!-- ── RESTAURANTS TAB ── -->
+    <div class="tab-panel active" id="tab-restaurants">
+      <div class="section-head">
+        <div>
+          <div class="section-title">My <span>Restaurants</span></div>
+          <div class="count-label" id="r-count"></div>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="r-search" placeholder="Search…">
+        <select id="r-sort">
+          <option value="date-desc">Recent</option>
+          <option value="date-asc">Oldest</option>
+          <option value="overall-desc">Top Rated</option>
+          <option value="name">A–Z</option>
+        </select>
+      </div>
+      <div id="restaurants-grid"></div>
+    </div>
+
+    <!-- ── DISHES TAB ── -->
+    <div class="tab-panel" id="tab-dishes">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Dishes <span>Tried</span></div>
+          <div class="count-label" id="d-count"></div>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="d-search" placeholder="Search dishes…">
+        <select id="d-filter-rest"><option value="">All Restaurants</option></select>
+        <select id="d-sort">
+          <option value="date-desc">Recent</option>
+          <option value="rating-desc">Highest</option>
+          <option value="rating-asc">Lowest</option>
+          <option value="name">A–Z</option>
+        </select>
+      </div>
+      <div id="dishes-list"></div>
+    </div>
+
+    <!-- ── MAP TAB ── -->
+    <div class="tab-panel" id="tab-map" style="padding:0">
+      <div class="map-toolbar">
+        <input type="text" id="map-filter" placeholder="Filter restaurants…">
+        <button class="near-me-btn" id="near-me-btn">📍 Near Me</button>
+      </div>
+      <div id="near-me-status" style="padding:6px 16px;font-size:0.75rem;color:var(--sage);font-style:italic;background:white;border-bottom:1px solid var(--border)"></div>
+      <div id="map-container"><div id="map"></div></div>
+    </div>
+
+    <!-- ── COMMUNITY TAB ── -->
+    <div class="tab-panel" id="tab-community">
+      <div id="community-feed">
+        <div class="empty-state"><div class="empty-icon">🌍</div><h3>Community</h3><p>Switch to this tab to load the community feed.</p></div>
+      </div>
+    </div>
+
+    <!-- ── PROFILE TAB ── -->
+    <div class="tab-panel" id="tab-profile">
+      <div id="profile-content">
+        <div class="loading-spinner"><div class="spinner"></div> Loading…</div>
+      </div>
+    </div>
+
+  </div><!-- /app-content -->
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-tab="restaurants">
+      <span class="nav-icon">🍽</span>My Journal
+    </button>
+    <button class="nav-item" data-tab="dishes">
+      <span class="nav-icon">🥘</span>Dishes
+    </button>
+    <button class="nav-item" data-tab="map">
+      <span class="nav-icon">🗺</span>Map
+    </button>
+    <button class="nav-item" data-tab="community">
+      <span class="nav-icon">🌍</span>Community
+    </button>
+    <button class="nav-item" data-tab="profile">
+      <span class="nav-icon">👤</span>Profile
+    </button>
+  </nav>
+
+</div><!-- /app-screen -->
+
+
+<!-- ═══════════════════════════════════════════
+     MODALS
+════════════════════════════════════════════ -->
+
+<!-- Restaurant Add/Edit Modal -->
+<div class="modal-overlay" id="restaurant-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="rm-title">Add Restaurant</div>
+      <button class="modal-close" onclick="document.getElementById('restaurant-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-group">
+        <label>Search Restaurant *</label>
+        <div class="search-wrapper">
+          <input type="text" id="rm-name" placeholder="Type a name to search…" autocomplete="off">
+          <div class="ac-dropdown" id="r-ac"></div>
+        </div>
+        <div class="search-hint" id="r-hint">Type a name to search — or fill in manually</div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cuisine</label>
+          <input type="text" id="rm-cuisine" placeholder="e.g. Italian">
+        </div>
+        <div class="form-group">
+          <label>City</label>
+          <input type="text" id="rm-city" placeholder="e.g. New York">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date Visited</label>
+          <input type="text" id="rm-date" placeholder="e.g. May 2025">
+        </div>
+        <div class="form-group">
+          <label>Would Return?</label>
+          <select id="rm-return">
+            <option value="">Not sure</option>
+            <option value="yes">Definitely yes</option>
+            <option value="maybe">Maybe</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Address (for map)</label>
+        <input type="text" id="rm-address" placeholder="Auto-filled from search">
+      </div>
+
+      <!-- Ratings -->
+      <div class="form-group">
+        <label>Ratings</label>
+        <div class="rating-group">
+          <div class="rating-row">
+            <span class="rating-row-label">Food Quality</span>
+            <div class="stars" data-field="food"></div>
+            <span class="star-val" id="sv-food">–</span>
+          </div>
+          <div class="rating-row">
+            <span class="rating-row-label">Atmosphere</span>
+            <div class="stars" data-field="atmosphere"></div>
+            <span class="star-val" id="sv-atmosphere">–</span>
+          </div>
+          <div class="rating-row">
+            <span class="rating-row-label">Service</span>
+            <div class="stars" data-field="service"></div>
+            <span class="star-val" id="sv-service">–</span>
+          </div>
+          <div class="rating-row">
+            <span class="rating-row-label">Noise Level</span>
+            <div class="stars" data-field="noise"></div>
+            <span class="star-val" id="sv-noise">–</span>
+          </div>
+          <div class="rating-row">
+            <span class="rating-row-label">Value</span>
+            <div class="stars" data-field="value"></div>
+            <span class="star-val" id="sv-value">–</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Notes & Impressions</label>
+        <textarea id="rm-notes" placeholder="What stood out? Memorable moments…"></textarea>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Share publicly</div>
+          <div class="toggle-sub">Visible in the community feed</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="rm-public">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="document.getElementById('restaurant-modal').classList.remove('open')">Cancel</button>
+        <button class="btn-primary" id="rm-save">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Dish Add/Edit Modal -->
+<div class="modal-overlay" id="dish-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="dm-title">Add Dish</div>
+      <button class="modal-close" onclick="document.getElementById('dish-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Dish Name *</label>
+        <input type="text" id="dm-name" placeholder="e.g. Tagliatelle al Ragù">
+      </div>
+      <div class="form-group">
+        <label>Restaurant</label>
+        <select id="dm-restaurant">
+          <option value="">— Select restaurant —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Rating (1–10)</label>
+        <input type="range" id="dm-rating" min="1" max="10" value="7">
+        <div class="range-display" id="dm-rating-display">7 <span>/ 10</span></div>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="dm-category">
+          <option value="">Any</option>
+          <option value="Starter">Starter</option>
+          <option value="Main">Main</option>
+          <option value="Dessert">Dessert</option>
+          <option value="Drink">Drink</option>
+          <option value="Side">Side</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tasting Notes</label>
+        <textarea id="dm-notes" placeholder="Flavors, texture, presentation…"></textarea>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Share publicly</div>
+          <div class="toggle-sub">Visible in the community feed</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="dm-public">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="document.getElementById('dish-modal').classList.remove('open')">Cancel</button>
+        <button class="btn-primary" id="dm-save">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Restaurant Drawer -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="view-name"></div>
+        <div class="text-muted" id="view-meta" style="margin-top:3px;font-size:0.75rem"></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('view-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body" id="view-body"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- App scripts (ES modules) -->
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
