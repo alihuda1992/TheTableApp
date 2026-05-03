@@ -196,6 +196,7 @@ function switchTab(tab) {
   activeTab = tab;
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${tab}`));
+  document.querySelector('.app-content').classList.toggle('map-mode', tab === 'map');
   if (tab === 'map') { initMap(restaurants); }
   if (tab === 'community') { loadCommunity(); }
 }

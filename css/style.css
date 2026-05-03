@@ -754,7 +754,17 @@ input[type="range"] {
 }
 
 /* ============ MAP ============ */
-#map-container { height: calc(100dvh - 56px - 60px - var(--safe-top) - var(--safe-bottom)); }
+/* Map tab: disable scroll and padding so the map fills exactly */
+.app-content.map-mode {
+  overflow: hidden;
+  padding-bottom: 0;
+}
+#tab-map.active {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+#map-container { flex: 1; min-height: 0; }
 #map { width: 100%; height: 100%; }
 .map-toolbar {
   padding: 10px 16px;
