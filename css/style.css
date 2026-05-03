@@ -757,7 +757,7 @@ input[type="range"] {
 /* Map tab: disable scroll and padding so the map fills exactly */
 .app-content.map-mode {
   overflow: hidden;
-  padding-bottom: 0;
+  padding-bottom: calc(60px + var(--safe-bottom));
 }
 #tab-map.active {
   display: flex;
