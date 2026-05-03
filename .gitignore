@@ -13,3 +13,10 @@
 # Local env files (never commit secrets)
 .env
 .env.local
+
+# Node
+node_modules/
+
+# Playwright
+test-results/
+playwright-report/
