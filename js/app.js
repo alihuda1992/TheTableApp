@@ -19,6 +19,7 @@ let pendingCoords = null;
 const ratings = { food: 0, atmosphere: 0, service: 0, noise: 0, value: 0 };
 const ratingFields = ['food', 'atmosphere', 'service', 'noise', 'value'];
 const ratingLabels = { food:'Food Quality', atmosphere:'Atmosphere', service:'Service', noise:'Noise Level', value:'Value' };
+const EMOJI_REACTIONS = ['🔥', '❤️', '😍', '👏', '🤔'];
 
 // ============ INIT ============
 document.addEventListener('DOMContentLoaded', async () => {
@@ -40,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   wireModals();
   wireForms();
   wireMap();
+  wireCommunityFeed();
 });
 
 function registerSW() {
@@ -740,49 +742,86 @@ function wireMap() {
 }
 
 // ============ COMMUNITY FEED ============
+
+function buildCommunityCard(r, reactMap, commentCounts) {
+  const p = r.profile || {};
+  const initials = (p.display_name || p.username || '?').slice(0,2).toUpperCase();
+  const color = p.avatar_color || '#c0622a';
+  const scores = ratingFields.map(f =>
+    `<div class="score-pill"><span class="score-pill-name">${f==='atmosphere'?'Atmo':f.charAt(0).toUpperCase()+f.slice(1)}</span><span class="score-pill-val">${r.ratings[f]||'–'}</span></div>`
+  ).join('');
+
+  const rd = reactMap[r.id] || { counts: {}, mine: new Set() };
+  const cc = commentCounts[r.id] || 0;
+
+  const rxnBtn = (type, label) => {
+    const active = rd.mine.has(type) ? ' active' : '';
+    const n = rd.counts[type] || '';
+    return `<button class="rxn-btn${active}" data-type="${esc(type)}">${label}<span class="rxn-count">${n}</span></button>`;
+  };
+  const thumbs = `<div class="rxn-thumbs">${rxnBtn('up','👍')}${rxnBtn('down','👎')}</div>`;
+  const emojis = EMOJI_REACTIONS.map(e => rxnBtn(e, e)).join('');
+
+  return `<div class="community-card">
+    <div class="community-card-header">
+      <div class="avatar" style="background:${color}">${initials}</div>
+      <div><div class="avatar-name">${esc(p.display_name||p.username||'Unknown')}</div>
+      <div class="avatar-date">${r.city||''} · ${timeAgo(r.createdAt)}</div></div>
+    </div>
+    <div class="card-accent"></div>
+    <div class="card-body" style="padding-top:12px">
+      <div class="card-name">${esc(r.name)}</div>
+      <div class="card-meta">${r.cuisine?`<span>🍴 ${esc(r.cuisine)}</span>`:''}</div>
+      <div class="card-scores">${scores}</div>
+      ${r.notes?`<div class="card-notes">${esc(r.notes)}</div>`:''}
+    </div>
+    ${r.overall?`<div class="card-footer"><span class="badge"><span class="badge-num">${r.overall}</span>&nbsp;/ 5</span></div>`:''}
+    <div class="reaction-bar" data-id="${r.id}">
+      ${thumbs}
+      <div class="rxn-emojis">${emojis}</div>
+      <button class="comment-toggle-btn" data-id="${r.id}">💬 <span class="comment-count">${cc||''}</span></button>
+    </div>
+    <div class="comments-section" data-id="${r.id}" style="display:none"></div>
+  </div>`;
+}
+
 async function loadCommunity() {
   const feed = document.getElementById('community-feed');
   feed.innerHTML = `<div class="loading-spinner"><div class="spinner"></div> Loading…</div>`;
   try {
-    const [pubRests, pubDishes] = await Promise.all([DB.getPublicRestaurants(), DB.getPublicDishes()]);
-    if (!pubRests.length && !pubDishes.length) {
+    const pubRests = await DB.getPublicRestaurants();
+    if (!pubRests.length) {
       feed.innerHTML = emptyState('🌍', 'Nothing shared yet', 'Be the first to make your entries public!');
       return;
     }
 
-    const restHtml = pubRests.map(r => {
-      const p = r.profile || {};
-      const initials = (p.display_name || p.username || '?').slice(0,2).toUpperCase();
-      const color = p.avatar_color || '#c0622a';
-      const scores = ratingFields.map(f=>`<div class="score-pill"><span class="score-pill-name">${f==='atmosphere'?'Atmo':f.charAt(0).toUpperCase()+f.slice(1)}</span><span class="score-pill-val">${r.ratings[f]||'–'}</span></div>`).join('');
-      return `<div class="community-card">
-        <div class="community-card-header">
-          <div class="avatar" style="background:${color}">${initials}</div>
-          <div><div class="avatar-name">${esc(p.display_name || p.username || 'Unknown')}</div>
-          <div class="avatar-date">${r.city||''} · ${timeAgo(r.createdAt)}</div></div>
-        </div>
-        <div class="card-accent"></div>
-        <div class="card-body" style="padding-top:12px">
-          <div class="card-name">${esc(r.name)}</div>
-          <div class="card-meta">${r.cuisine?`<span>🍴 ${esc(r.cuisine)}</span>`:''}</div>
-          <div class="card-scores">${scores}</div>
-          ${r.notes?`<div class="card-notes">${esc(r.notes)}</div>`:''}
-        </div>
-        ${r.overall?`<div class="card-footer"><span class="badge"><span class="badge-num">${r.overall}</span>&nbsp;/ 5</span></div>`:''}
-      </div>`;
-    }).join('');
+    const ids = pubRests.map(r => r.id);
+    const [reactions, commentCounts] = await Promise.all([
+      DB.getReactions(ids).catch(() => []),
+      DB.getCommentCounts(ids).catch(() => ({})),
+    ]);
 
+    const myId = currentUser?.id;
+    const reactMap = {};
+    for (const row of reactions) {
+      if (!reactMap[row.restaurant_id]) reactMap[row.restaurant_id] = { counts: {}, mine: new Set() };
+      reactMap[row.restaurant_id].counts[row.type] = (reactMap[row.restaurant_id].counts[row.type] || 0) + 1;
+      if (row.user_id === myId) reactMap[row.restaurant_id].mine.add(row.type);
+    }
+
+    window._communityRests = pubRests;
+    window._communityReactMap = reactMap;
+    window._communityCommentCounts = commentCounts;
+
+    const cardsHtml = pubRests.map(r => buildCommunityCard(r, reactMap, commentCounts)).join('');
     feed.innerHTML = `
       <div style="margin-bottom:20px">
         <div class="section-head"><div class="section-title">Community <span>Feed</span></div></div>
         <div class="filter-bar">
           <input type="text" id="community-search" placeholder="Search restaurants…" oninput="communitySearch(this.value)">
         </div>
-        <div id="community-cards">${restHtml}</div>
+        <div id="community-cards">${cardsHtml}</div>
       </div>`;
-
-    window._communityRests = pubRests;
-    window._communityCards = restHtml;
   } catch(e) {
     feed.innerHTML = `<div class="empty-state"><p>Error loading community: ${e.message}</p></div>`;
   }
@@ -796,23 +835,162 @@ window.communitySearch = (val) => {
   const container = document.getElementById('community-cards');
   if (!container) return;
   if (!filtered.length) { container.innerHTML = `<div class="empty-state"><p>No results</p></div>`; return; }
-  container.innerHTML = filtered.map(r => {
-    const p = r.profile || {};
+  const reactMap = window._communityReactMap || {};
+  const commentCounts = window._communityCommentCounts || {};
+  container.innerHTML = filtered.map(r => buildCommunityCard(r, reactMap, commentCounts)).join('');
+};
+
+// ── Social interactions ──────────────────────────────────────
+
+function wireCommunityFeed() {
+  const feed = document.getElementById('community-feed');
+
+  feed.addEventListener('click', async e => {
+    const rxnBtn = e.target.closest('.rxn-btn');
+    if (rxnBtn) {
+      const bar = rxnBtn.closest('.reaction-bar');
+      if (bar) handleReaction(bar.dataset.id, rxnBtn.dataset.type, bar);
+      return;
+    }
+    const toggleBtn = e.target.closest('.comment-toggle-btn');
+    if (toggleBtn) { toggleComments(toggleBtn.dataset.id); return; }
+
+    const submitBtn = e.target.closest('.comment-submit-btn');
+    if (submitBtn) {
+      const input = feed.querySelector(`.comment-input[data-id="${submitBtn.dataset.id}"]`);
+      if (input) submitComment(submitBtn.dataset.id, input);
+      return;
+    }
+    const delBtn = e.target.closest('.comment-delete-btn');
+    if (delBtn) { handleDeleteComment(delBtn.dataset.commentId, delBtn.dataset.restId); return; }
+  });
+
+  feed.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.classList.contains('comment-input')) {
+      submitComment(e.target.dataset.id, e.target);
+    }
+  });
+}
+
+async function handleReaction(restId, type, bar) {
+  const btn = bar.querySelector(`[data-type="${type}"]`);
+  if (!btn) return;
+  const wasActive = btn.classList.contains('active');
+
+  if (type === 'up' || type === 'down') {
+    const opposite = type === 'up' ? 'down' : 'up';
+    const oppBtn = bar.querySelector(`[data-type="${opposite}"]`);
+    if (oppBtn?.classList.contains('active')) {
+      oppBtn.classList.remove('active');
+      nudgeCount(oppBtn, -1);
+    }
+  }
+  btn.classList.toggle('active', !wasActive);
+  nudgeCount(btn, wasActive ? -1 : 1);
+
+  try {
+    await DB.toggleReaction(restId, type);
+  } catch {
+    toast('Could not save reaction');
+    btn.classList.toggle('active', wasActive);
+    nudgeCount(btn, wasActive ? 1 : -1);
+  }
+}
+
+function nudgeCount(btn, delta) {
+  const el = btn.querySelector('.rxn-count');
+  const n = (parseInt(el.textContent) || 0) + delta;
+  el.textContent = n > 0 ? n : '';
+}
+
+async function toggleComments(restId) {
+  const section = document.querySelector(`.comments-section[data-id="${restId}"]`);
+  if (!section) return;
+  const open = section.style.display === 'block';
+  section.style.display = open ? 'none' : 'block';
+  if (!open && !section.dataset.loaded) {
+    section.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+    try {
+      const comments = await DB.getComments(restId);
+      section.dataset.loaded = '1';
+      renderComments(section, restId, comments);
+    } catch {
+      section.innerHTML = '<p class="no-comments">Could not load comments.</p>';
+    }
+  }
+}
+
+function renderComments(section, restId, comments) {
+  const myId = currentUser?.id;
+  const items = comments.map(c => {
+    const p = c.profiles || {};
     const initials = (p.display_name||p.username||'?').slice(0,2).toUpperCase();
     const color = p.avatar_color || '#c0622a';
-    const scores = ratingFields.map(f=>`<div class="score-pill"><span class="score-pill-name">${f==='atmosphere'?'Atmo':f.charAt(0).toUpperCase()+f.slice(1)}</span><span class="score-pill-val">${r.ratings[f]||'–'}</span></div>`).join('');
-    return `<div class="community-card">
-      <div class="community-card-header"><div class="avatar" style="background:${color}">${initials}</div>
-      <div><div class="avatar-name">${esc(p.display_name||p.username||'Unknown')}</div><div class="avatar-date">${r.city||''} · ${timeAgo(r.createdAt)}</div></div></div>
-      <div class="card-accent"></div>
-      <div class="card-body" style="padding-top:12px"><div class="card-name">${esc(r.name)}</div>
-      <div class="card-meta">${r.cuisine?`<span>🍴 ${esc(r.cuisine)}</span>`:''}</div>
-      <div class="card-scores">${scores}</div>
-      ${r.notes?`<div class="card-notes">${esc(r.notes)}</div>`:''}</div>
-      ${r.overall?`<div class="card-footer"><span class="badge"><span class="badge-num">${r.overall}</span>&nbsp;/ 5</span></div>`:''}
+    const canDel = c.user_id === myId;
+    return `<div class="comment-item" data-comment-id="${c.id}">
+      <div class="comment-avatar" style="background:${color}">${initials}</div>
+      <div class="comment-body">
+        <span class="comment-user">${esc(p.display_name||p.username||'Unknown')}</span>
+        <span class="comment-text">${esc(c.body)}</span>
+        <span class="comment-time">${timeAgo(c.created_at)}</span>
+      </div>
+      ${canDel?`<button class="comment-delete-btn" data-comment-id="${c.id}" data-rest-id="${restId}">✕</button>`:''}
     </div>`;
-  }).join('');
-};
+  }).join('') || '<p class="no-comments">No comments yet — be the first!</p>';
+
+  section.innerHTML = `
+    <div class="comments-list">${items}</div>
+    <div class="comment-input-row">
+      <input class="comment-input" data-id="${restId}" placeholder="Add a comment…" maxlength="500">
+      <button class="comment-submit-btn btn-primary" data-id="${restId}">Post</button>
+    </div>`;
+}
+
+async function submitComment(restId, inputEl) {
+  const body = inputEl.value.trim();
+  if (!body) return;
+  inputEl.disabled = true;
+  try {
+    const c = await DB.addComment(restId, body);
+    inputEl.value = '';
+    const section = document.querySelector(`.comments-section[data-id="${restId}"]`);
+    const list = section?.querySelector('.comments-list');
+    if (list) {
+      const noMsg = list.querySelector('.no-comments');
+      if (noMsg) noMsg.remove();
+      const p = c.profiles || {};
+      const initials = (p.display_name||p.username||'?').slice(0,2).toUpperCase();
+      const color = p.avatar_color || '#c0622a';
+      list.insertAdjacentHTML('beforeend', `<div class="comment-item" data-comment-id="${c.id}">
+        <div class="comment-avatar" style="background:${color}">${initials}</div>
+        <div class="comment-body">
+          <span class="comment-user">${esc(p.display_name||p.username||'Unknown')}</span>
+          <span class="comment-text">${esc(c.body)}</span>
+          <span class="comment-time">just now</span>
+        </div>
+        <button class="comment-delete-btn" data-comment-id="${c.id}" data-rest-id="${restId}">✕</button>
+      </div>`);
+    }
+    const countEl = document.querySelector(`.comment-toggle-btn[data-id="${restId}"] .comment-count`);
+    if (countEl) countEl.textContent = (parseInt(countEl.textContent)||0) + 1;
+  } catch(e) {
+    toast('Could not post comment: ' + e.message);
+  } finally {
+    inputEl.disabled = false;
+  }
+}
+
+async function handleDeleteComment(commentId, restId) {
+  try {
+    await DB.deleteComment(commentId);
+    document.querySelector(`.comment-item[data-comment-id="${commentId}"]`)?.remove();
+    const countEl = document.querySelector(`.comment-toggle-btn[data-id="${restId}"] .comment-count`);
+    if (countEl) {
+      const n = Math.max(0, (parseInt(countEl.textContent)||0) - 1);
+      countEl.textContent = n || '';
+    }
+  } catch { toast('Could not delete comment'); }
+}
 
 // ============ PROFILE TAB ============
 function updateProfileTab() {

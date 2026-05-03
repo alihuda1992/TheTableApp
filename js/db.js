@@ -171,6 +171,70 @@ export async function deleteDish(id) {
   if (error) throw error;
 }
 
+// ---- REACTIONS ----
+export async function getReactions(restaurantIds) {
+  if (!restaurantIds.length) return [];
+  const { data, error } = await sb
+    .from('reactions')
+    .select('restaurant_id, type, user_id')
+    .in('restaurant_id', restaurantIds);
+  if (error) throw error;
+  return data;
+}
+
+export async function toggleReaction(restaurantId, type) {
+  const u = uid();
+  if (type === 'up' || type === 'down') {
+    const opposite = type === 'up' ? 'down' : 'up';
+    await sb.from('reactions').delete()
+      .eq('user_id', u).eq('restaurant_id', restaurantId).eq('type', opposite);
+  }
+  const { data } = await sb.from('reactions').select('id')
+    .eq('user_id', u).eq('restaurant_id', restaurantId).eq('type', type).maybeSingle();
+  if (data) {
+    await sb.from('reactions').delete().eq('id', data.id);
+    return false;
+  }
+  await sb.from('reactions').insert({ user_id: u, restaurant_id: restaurantId, type });
+  return true;
+}
+
+// ---- COMMENTS ----
+export async function getCommentCounts(restaurantIds) {
+  if (!restaurantIds.length) return {};
+  const { data, error } = await sb
+    .from('comments').select('restaurant_id').in('restaurant_id', restaurantIds);
+  if (error) throw error;
+  const counts = {};
+  for (const c of data) counts[c.restaurant_id] = (counts[c.restaurant_id] || 0) + 1;
+  return counts;
+}
+
+export async function getComments(restaurantId) {
+  const { data, error } = await sb
+    .from('comments')
+    .select('*, profiles(username, display_name, avatar_color)')
+    .eq('restaurant_id', restaurantId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function addComment(restaurantId, body) {
+  const { data, error } = await sb
+    .from('comments')
+    .insert({ user_id: uid(), restaurant_id: restaurantId, body: body.trim() })
+    .select('*, profiles(username, display_name, avatar_color)')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteComment(id) {
+  const { error } = await sb.from('comments').delete().eq('id', id).eq('user_id', uid());
+  if (error) throw error;
+}
+
 // ---- PROFILE ----
 export async function updateProfile(fields) {
   const { data, error } = await sb.from('profiles').update(fields).eq('id', uid()).select().single();
