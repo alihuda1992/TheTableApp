@@ -279,12 +279,16 @@ function renderViewModal() {
   const id = viewingRestaurantId;
   const r = restaurants.find(x => x.id === id);
   if (!r) return;
+
+  // Preserve active tab across re-renders (e.g. after adding a dish)
+  const activePanelId = document.querySelector('#view-body .view-panel.active')?.id || 'vp-overview';
+
   document.getElementById('view-name').textContent = r.name;
   document.getElementById('view-meta').textContent = [r.cuisine, r.city, r.date].filter(Boolean).join(' · ');
 
   const scoresHtml = ratingFields.map(f => {
     const v = r.ratings[f] || 0;
-    const stars = Array.from({length:5},(_,i)=>`<span class="view-star" style="color:${i<v?'var(--gold)':'var(--border)'}"'>★</span>`).join('');
+    const stars = Array.from({length:5},(_,i)=>`<span class="view-star" style="color:${i<v?'var(--gold)':'var(--border)'}">★</span>`).join('');
     return `<div class="view-score-row">
       <span class="view-score-label">${ratingLabels[f]}</span>
       <div class="view-score-stars">${stars}<span class="view-score-num">${v||'–'}</span></div>
@@ -316,26 +320,45 @@ function renderViewModal() {
   }).join('');
 
   const returnLabels = { yes:'↩ Would return', maybe:'↩ Maybe return', no:'✕ Would not return' };
+  const dishBadge = dishList.length ? `<span class="view-tab-count">${dishList.length}</span>` : '';
 
   document.getElementById('view-body').innerHTML = `
-    ${r.address?`<div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px">📍 ${esc(r.address)}</div>`:''}
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
-      ${r.overall?`<span class="badge"><span class="badge-num">${r.overall}</span>&nbsp;/ 5 avg</span>`:''}
-      ${r.wouldReturn?`<span style="font-size:0.73rem;color:var(--muted);padding:3px 10px;border:1px solid var(--border)">${returnLabels[r.wouldReturn]}</span>`:''}
-      ${r.isPublic?`<span class="public-tag">Public</span>`:''}
+    <div class="view-tab-bar">
+      <button class="view-tab${activePanelId === 'vp-overview' ? ' active' : ''}" data-panel="vp-overview">Overview</button>
+      <button class="view-tab${activePanelId === 'vp-dishes' ? ' active' : ''}" data-panel="vp-dishes">Dishes${dishBadge}</button>
     </div>
-    <div class="view-scores">${scoresHtml}</div>
-    ${r.notes?`<div class="view-quote">"${esc(r.notes)}"</div>`:''}
-    <div class="view-dishes-head">
-      <div class="view-dishes-title">Dishes Tried <span style="font-size:0.72rem;font-family:'DM Sans',sans-serif;color:var(--muted)">${dishList.length ? dishList.length + ' dish' + (dishList.length>1?'es':'') : ''}</span></div>
-      <button class="btn-primary" style="font-size:0.7rem;padding:7px 13px" onclick="window._addDishForRest('${id}')">+ Dish</button>
+
+    <div class="view-panel${activePanelId === 'vp-overview' ? ' active' : ''}" id="vp-overview">
+      ${r.address?`<div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px">📍 ${esc(r.address)}</div>`:''}
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+        ${r.overall?`<span class="badge"><span class="badge-num">${r.overall}</span>&nbsp;/ 5 avg</span>`:''}
+        ${r.wouldReturn?`<span style="font-size:0.73rem;color:var(--muted);padding:3px 10px;border:1px solid var(--border)">${returnLabels[r.wouldReturn]}</span>`:''}
+        ${r.isPublic?`<span class="public-tag">Public</span>`:''}
+      </div>
+      <div class="view-scores">${scoresHtml}</div>
+      ${r.notes?`<div class="view-quote">"${esc(r.notes)}"</div>`:''}
+      <div class="form-actions" style="margin-top:20px">
+        <button class="btn-danger" onclick="window._delRest('${id}')">Delete</button>
+        <button class="btn-secondary" onclick="window._editRest('${id}')">Edit</button>
+      </div>
     </div>
-    ${dishesHtml || `<div class="dishes-empty">No dishes logged yet — tap + Dish to add one</div>`}
-    <div class="form-actions" style="margin-top:20px">
-      <button class="btn-danger" onclick="window._delRest('${id}')">Delete</button>
-      <button class="btn-secondary" onclick="window._editRest('${id}')">Edit</button>
+
+    <div class="view-panel${activePanelId === 'vp-dishes' ? ' active' : ''}" id="vp-dishes">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button class="btn-primary" style="font-size:0.7rem;padding:7px 13px" onclick="window._addDishForRest('${id}')">+ Add Dish</button>
+      </div>
+      ${dishesHtml || `<div class="dishes-empty">No dishes logged yet — tap + Add Dish above</div>`}
     </div>
   `;
+
+  document.querySelectorAll('#view-body .view-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#view-body .view-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('#view-body .view-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.panel).classList.add('active');
+    });
+  });
 }
 
 // Bridge functions callable from innerHTML
