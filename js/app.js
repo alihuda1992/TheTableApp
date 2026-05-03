@@ -312,8 +312,8 @@ function renderViewModal() {
           <div class="inline-dish-denom">/ 10</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:2px">
-          <button class="btn-icon" onclick="window._editDish('${d.id}')">✏️</button>
-          <button class="btn-icon" onclick="window._delDish('${d.id}')">🗑</button>
+          <button class="btn-icon" data-action="edit-dish" data-id="${d.id}">✏️</button>
+          <button class="btn-icon" data-action="del-dish" data-id="${d.id}">🗑</button>
         </div>
       </div>
     </div>`;
@@ -338,28 +338,21 @@ function renderViewModal() {
       <div class="view-scores">${scoresHtml}</div>
       ${r.notes?`<div class="view-quote">"${esc(r.notes)}"</div>`:''}
       <div class="form-actions" style="margin-top:20px">
-        <button class="btn-danger" onclick="window._delRest('${id}')">Delete</button>
-        <button class="btn-secondary" onclick="window._editRest('${id}')">Edit</button>
+        <button class="btn-danger" data-action="del-rest" data-id="${id}">Delete</button>
+        <button class="btn-secondary" data-action="edit-rest" data-id="${id}">Edit</button>
       </div>
     </div>
 
     <div class="view-panel${activePanelId === 'vp-dishes' ? ' active' : ''}" id="vp-dishes">
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-        <button class="btn-primary" style="font-size:0.7rem;padding:7px 13px" onclick="window._addDishForRest('${id}')">+ Add Dish</button>
+        <button class="btn-primary" style="font-size:0.7rem;padding:7px 13px" data-action="add-dish" data-id="${id}">+ Add Dish</button>
       </div>
       ${dishesHtml || `<div class="dishes-empty">No dishes logged yet — tap + Add Dish above</div>`}
     </div>
   `;
 
-  document.querySelectorAll('#view-body .view-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('#view-body .view-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('#view-body .view-panel').forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById(tab.dataset.panel).classList.add('active');
-    });
-  });
 }
+
 
 // Bridge functions callable from innerHTML
 window._editRest = (id) => { closeModal('view-modal'); openRestaurantModal(id); };
@@ -600,10 +593,14 @@ async function saveRestaurant() {
 
 // ============ DISHES TAB ============
 function renderDishes() {
+  const container = document.getElementById('dishes-list');
+  if (!container) return; // dishes tab not present in this layout
+
   const search = (document.getElementById('d-search')?.value || '').toLowerCase();
   const filterR = document.getElementById('d-filter-rest')?.value || '';
   const sort = document.getElementById('d-sort')?.value || 'date-desc';
-  document.getElementById('d-count').textContent = `${dishes.length} dish${dishes.length!==1?'es':''} recorded`;
+  const dCount = document.getElementById('d-count');
+  if (dCount) dCount.textContent = `${dishes.length} dish${dishes.length!==1?'es':''} recorded`;
 
   // Populate restaurant filter
   const filterSel = document.getElementById('d-filter-rest');
@@ -623,7 +620,6 @@ function renderDishes() {
   else if (sort === 'rating-asc') list.sort((a,b) => a.rating-b.rating);
   else if (sort === 'name') list.sort((a,b) => a.name.localeCompare(b.name));
 
-  const container = document.getElementById('dishes-list');
   if (!list.length) {
     container.innerHTML = emptyState('🥘', dishes.length ? 'No results' : 'No dishes yet', 'Add dishes you\'ve tried at your restaurants.');
     return;
@@ -840,8 +836,12 @@ function updateProfileTab() {
     </div>
     <div style="margin-bottom:24px">
       <div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--espresso);margin-bottom:14px">Account</div>
-      <button class="btn-secondary" style="width:100%;margin-bottom:10px;text-align:left;padding:14px" onclick="document.getElementById('signout-btn').click()">Sign Out →</button>
+      <button class="btn-secondary" id="profile-signout-btn" style="width:100%;margin-bottom:10px;text-align:left;padding:14px">Sign Out →</button>
     </div>`;
+  document.getElementById('profile-signout-btn')?.addEventListener('click', async () => {
+    await signOut();
+    restaurants = []; dishes = [];
+  });
 }
 
 function updateProfileNav() {
@@ -855,11 +855,48 @@ function updateProfileNav() {
 
 // ============ MODAL SYSTEM ============
 function wireModals() {
+  // Close on overlay click
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', e => {
       if (e.target === overlay) closeModal(overlay.id);
     });
   });
+
+  // X close buttons — each .modal-close is inside its .modal-overlay
+  document.querySelectorAll('.modal-close').forEach(btn => {
+    const overlay = btn.closest('.modal-overlay');
+    if (overlay) btn.addEventListener('click', () => closeModal(overlay.id));
+  });
+
+  // Cancel buttons inside static modals
+  document.querySelectorAll('#restaurant-modal .btn-secondary, #dish-modal .btn-secondary').forEach(btn => {
+    const overlay = btn.closest('.modal-overlay');
+    if (overlay) btn.addEventListener('click', () => closeModal(overlay.id));
+  });
+
+  // View-body: single delegated listener handles tab switching + all action buttons.
+  // This avoids inline onclick (blocked by CSP) and survives innerHTML re-renders.
+  document.getElementById('view-body')?.addEventListener('click', e => {
+    const tab = e.target.closest('.view-tab');
+    if (tab) {
+      document.querySelectorAll('#view-body .view-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('#view-body .view-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.panel)?.classList.add('active');
+      return;
+    }
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const { action, id } = btn.dataset;
+    switch (action) {
+      case 'del-rest':  window._delRest(id); break;
+      case 'edit-rest': window._editRest(id); break;
+      case 'add-dish':  window._addDishForRest(id); break;
+      case 'edit-dish': window._editDish(id); break;
+      case 'del-dish':  window._delDish(id); break;
+    }
+  });
+
   document.getElementById('rm-save')?.addEventListener('click', saveRestaurant);
   document.getElementById('dm-save')?.addEventListener('click', saveDish);
   document.getElementById('dm-rating')?.addEventListener('input', updateRangeDisplay);
@@ -867,7 +904,6 @@ function wireModals() {
     await signOut();
     restaurants = []; dishes = [];
   });
-  // Add restaurant button
   document.getElementById('add-restaurant-btn')?.addEventListener('click', () => openRestaurantModal());
   document.getElementById('add-dish-btn')?.addEventListener('click', () => openDishModal());
   wireRestaurantSearch();

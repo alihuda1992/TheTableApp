@@ -1,0 +1,13 @@
+{
+  "name": "thetable",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "serve": "npx serve . --listen 8080 --no-clipboard"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "serve": "^14.2.0"
+  }
+}
