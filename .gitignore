@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor directories
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Local env files (never commit secrets)
+.env
+.env.local

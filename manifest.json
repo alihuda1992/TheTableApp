@@ -2,7 +2,7 @@
   "name": "The Table",
   "short_name": "The Table",
   "description": "Your personal restaurant journal",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#3d2b1f",
   "theme_color": "#3d2b1f",
