@@ -36,7 +36,7 @@ create table if not exists profiles (
 -- ============================================================
 create table if not exists restaurants (
   id               uuid    primary key default gen_random_uuid(),
-  user_id          uuid    not null references auth.users(id) on delete cascade,
+  user_id          uuid    not null references public.profiles(id) on delete cascade,
   name             text    not null check (length(name) between 1 and 200),
   cuisine          text    check (length(cuisine) <= 100),
   city             text    check (length(city) <= 100),
@@ -75,7 +75,7 @@ create table if not exists restaurants (
 -- ============================================================
 create table if not exists dishes (
   id             uuid    primary key default gen_random_uuid(),
-  user_id        uuid    not null references auth.users(id) on delete cascade,
+  user_id        uuid    not null references public.profiles(id) on delete cascade,
   restaurant_id  uuid    references restaurants(id) on delete cascade,
   name           text    not null check (length(name) between 1 and 200),
   category       text    check (category in ('Starter','Main','Dessert','Drink','Side','Other')),
