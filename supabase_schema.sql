@@ -114,7 +114,7 @@ create trigger restaurants_updated_at
 -- TRIGGER: cross-ownership guard on dishes
 -- ============================================================
 create or replace function check_dish_restaurant_ownership()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if new.restaurant_id is not null then
     if not exists (
@@ -137,7 +137,7 @@ create trigger dishes_ownership_check
 -- TRIGGER: dish public-consistency guard
 -- ============================================================
 create or replace function check_dish_public_consistency()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if new.is_public = true and new.restaurant_id is not null then
     if exists (
@@ -160,7 +160,7 @@ create trigger dishes_public_check
 -- TRIGGER: per-user record limits (storage DoS protection)
 -- ============================================================
 create or replace function enforce_restaurant_limit()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if (select count(*) from restaurants where user_id = new.user_id) >= 500 then
     raise exception 'Maximum of 500 restaurants per account';
@@ -175,7 +175,7 @@ create trigger restaurants_limit
   for each row execute procedure enforce_restaurant_limit();
 
 create or replace function enforce_dish_limit()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if (select count(*) from dishes where user_id = new.user_id) >= 2000 then
     raise exception 'Maximum of 2000 dishes per account';
@@ -240,7 +240,7 @@ create policy "dishes_delete" on dishes
 -- AUTO-CREATE PROFILE ON SIGNUP (sanitized, collision-safe)
 -- ============================================================
 create or replace function handle_new_user()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 declare
   raw_username  text;
   safe_username text;

@@ -22,6 +22,7 @@ export const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 // Current user reactive state
 export let currentUser = null;
 export let currentProfile = null;
+let _inRecoveryMode = false;
 
 // ── Brute-force throttle (client-side, lightweight) ──────────
 const _loginAttempts = { count: 0, lockedUntil: 0 };
@@ -65,8 +66,16 @@ export async function initAuth() {
   }
 
   sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      _inRecoveryMode = true;
+      window.dispatchEvent(new CustomEvent('auth-change', { detail: { event: 'PASSWORD_RECOVERY' } }));
+      return;
+    }
+    // Suppress auto-login during recovery flow
+    if (_inRecoveryMode && event === 'SIGNED_IN') return;
+
     // Clear sensitive state on sign-out or token errors
-    if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+    if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
       currentUser = null;
       currentProfile = null;
     } else if (session?.user) {
@@ -129,6 +138,24 @@ export async function signIn(email, password) {
 }
 
 export async function signOut() {
+  currentUser = null;
+  currentProfile = null;
+  await sb.auth.signOut();
+}
+
+export async function resetPassword(email) {
+  if (!validateEmail(email)) throw new Error('Please enter a valid email address.');
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname,
+  });
+  if (error) throw error;
+}
+
+export async function updatePassword(newPassword) {
+  if (!validatePassword(newPassword)) throw new Error('Password must be at least 8 characters.');
+  const { error } = await sb.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+  _inRecoveryMode = false;
   currentUser = null;
   currentProfile = null;
   await sb.auth.signOut();

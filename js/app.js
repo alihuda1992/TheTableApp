@@ -1,7 +1,7 @@
 // ============================================================
 // app.js — Main UI logic
 // ============================================================
-import { initAuth, signIn, signUp, signOut, currentUser, currentProfile } from './auth.js';
+import { initAuth, signIn, signUp, signOut, resetPassword, updatePassword, currentUser, currentProfile } from './auth.js';
 import * as DB from './db.js';
 import { initMap, refreshMarkers, locateUser } from './map.js';
 
@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     showAuth();
   }
   window.addEventListener('auth-change', e => {
+    if (e.detail.event === 'PASSWORD_RECOVERY') { showPasswordRecoveryForm(); return; }
     if (e.detail.user) { showApp(); loadAll(); }
     else showAuth();
   });
@@ -51,6 +52,19 @@ function registerSW() {
 function showAuth() {
   document.getElementById('auth-screen').classList.add('active');
   document.getElementById('app-screen').classList.remove('active');
+  // Restore tabs and sign-in form
+  document.querySelector('.auth-tabs').style.display = '';
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+  document.getElementById('signin-form').classList.add('active');
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.form === 'signin-form'));
+}
+
+function showPasswordRecoveryForm() {
+  document.getElementById('auth-screen').classList.add('active');
+  document.getElementById('app-screen').classList.remove('active');
+  document.querySelector('.auth-tabs').style.display = 'none';
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+  document.getElementById('new-password-form').classList.add('active');
 }
 function showApp() {
   document.getElementById('auth-screen').classList.remove('active');
@@ -68,6 +82,54 @@ function wireAuthForms() {
       document.getElementById(t.dataset.form).classList.add('active');
       document.querySelectorAll('.auth-error').forEach(e => e.classList.remove('visible'));
     });
+  });
+
+  // Forgot password link
+  document.getElementById('forgot-link')?.addEventListener('click', () => {
+    document.querySelector('.auth-tabs').style.display = 'none';
+    document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+    document.getElementById('forgot-form').classList.add('active');
+  });
+
+  // Back to sign in
+  document.getElementById('forgot-back')?.addEventListener('click', () => {
+    document.querySelector('.auth-tabs').style.display = '';
+    document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+    document.getElementById('signin-form').classList.add('active');
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.form === 'signin-form'));
+  });
+
+  // Send reset link
+  document.getElementById('forgot-btn')?.addEventListener('click', async () => {
+    const email = document.getElementById('fp-email').value.trim();
+    const err = document.getElementById('forgot-error');
+    if (!email) { showErr(err, 'Please enter your email.'); return; }
+    setLoading('forgot-btn', true);
+    try {
+      await resetPassword(email);
+      showErr(err, '✓ Reset link sent — check your inbox.', true);
+    } catch(e) {
+      showErr(err, e.message || 'Could not send reset link.');
+    }
+    setLoading('forgot-btn', false);
+  });
+
+  // Set new password
+  document.getElementById('np-btn')?.addEventListener('click', async () => {
+    const pw = document.getElementById('np-password').value;
+    const confirm = document.getElementById('np-confirm').value;
+    const err = document.getElementById('np-error');
+    if (pw !== confirm) { showErr(err, 'Passwords do not match.'); return; }
+    if (pw.length < 8) { showErr(err, 'Password must be at least 8 characters.'); return; }
+    setLoading('np-btn', true);
+    try {
+      await updatePassword(pw);
+      showErr(err, '✓ Password updated — please sign in.', true);
+      setTimeout(() => showAuth(), 1500);
+    } catch(e) {
+      showErr(err, e.message || 'Could not update password.');
+    }
+    setLoading('np-btn', false);
   });
 
   // Sign in
