@@ -4,7 +4,9 @@
   "scripts": {
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "serve": "npx serve . --listen 8080 --no-clipboard"
+    "serve": "npx serve . --listen 8080 --no-clipboard",
+    "migrate:dates:dry": "node scripts/normalize-dates.js --dry-run",
+    "migrate:dates": "node scripts/normalize-dates.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

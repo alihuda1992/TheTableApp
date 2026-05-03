@@ -254,7 +254,7 @@ function restaurantCardHtml(r) {
       <div class="card-meta">
         ${r.cuisine ? `<span>🍴 ${esc(r.cuisine)}</span>` : ''}
         ${r.city ? `<span>📍 ${esc(r.city)}</span>` : ''}
-        ${r.date ? `<span>🗓 ${esc(r.date)}</span>` : ''}
+        ${r.date ? `<span>🗓 ${esc(fmtDate(r.date))}</span>` : ''}
       </div>
       <div class="card-scores">${scores}</div>
       ${r.notes ? `<div class="card-notes">${esc(r.notes)}</div>` : ''}
@@ -284,7 +284,7 @@ function renderViewModal() {
   const activePanelId = document.querySelector('#view-body .view-panel.active')?.id || 'vp-overview';
 
   document.getElementById('view-name').textContent = r.name;
-  document.getElementById('view-meta').textContent = [r.cuisine, r.city, r.date].filter(Boolean).join(' · ');
+  document.getElementById('view-meta').textContent = [r.cuisine, r.city, fmtDate(r.date)].filter(Boolean).join(' · ');
 
   const scoresHtml = ratingFields.map(f => {
     const v = r.ratings[f] || 0;
@@ -378,7 +378,7 @@ window._delDish = async (id) => {
     toast('Dish deleted');
   } catch(e) { toast('Error: ' + e.message); }
 };
-window._addDishForRest = (restaurantId) => openDishModal(null, restaurantId);
+window._addDishForRest = (restaurantId) => { closeModal('view-modal'); openDishModal(null, restaurantId); };
 
 // ============ RESTAURANT MODAL (Add/Edit) ============
 function openRestaurantModal(id = null) {
@@ -929,6 +929,13 @@ function closeModal(id) {
 function esc(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d))
+    return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return d;
 }
 
 function emptyState(icon, title, body) {
