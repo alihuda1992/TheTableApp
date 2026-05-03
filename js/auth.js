@@ -5,8 +5,8 @@
 const { createClient } = supabase;
 
 // ⚠️  PASTE YOUR SUPABASE VALUES HERE
-const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+const SUPABASE_URL = 'https://aaonztikuwpkgzgruylt.supabase.co/rest/v1/';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhb256dGlrdXdwa2d6Z3J1eWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3OTM4NjMsImV4cCI6MjA5MzM2OTg2M30.3jpIjVa7H8up9DmuEeit0SKKSnjhJBoi6yQoBWd87Sg';
 
 export const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
