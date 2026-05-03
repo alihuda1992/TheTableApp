@@ -113,7 +113,7 @@ body {
 .auth-error.visible { display: block; }
 
 /* ============ APP SHELL ============ */
-#app-screen { background: var(--cream); }
+#app-screen { background: var(--cream); height: 100dvh; }
 
 .app-header {
   background: var(--espresso);
@@ -913,6 +913,7 @@ input[type="range"] {
 
 @media (min-width: 600px) {
   .tab-panel { max-width: 700px; margin: 0 auto; }
+  #tab-map { max-width: none; margin: 0; }
   .form-row { grid-template-columns: 1fr 1fr; }
 }
 
