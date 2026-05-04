@@ -171,8 +171,20 @@
     <!-- ── MAP TAB ── -->
     <div class="tab-panel" id="tab-map" style="padding:0">
       <div class="map-toolbar">
-        <input type="text" id="map-filter" placeholder="Filter restaurants…">
+        <input type="text" id="map-filter" placeholder="Search restaurants…">
         <button class="near-me-btn" id="near-me-btn">📍 Near Me</button>
+        <div class="map-filters">
+          <select id="map-cuisine-filter">
+            <option value="">All Cuisines</option>
+          </select>
+          <select id="map-rating-filter">
+            <option value="">Any Rating</option>
+            <option value="3">3+ ★</option>
+            <option value="3.5">3.5+ ★</option>
+            <option value="4">4+ ★</option>
+            <option value="4.5">4.5+ ★</option>
+          </select>
+        </div>
         <div class="map-mode-toggle">
           <button class="map-mode-opt active" data-mode="mine">My Places</button>
           <button class="map-mode-opt" data-mode="community">+ Community</button>

@@ -201,7 +201,7 @@ function switchTab(tab) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${tab}`));
   document.querySelector('.app-content').classList.toggle('map-mode', tab === 'map');
-  if (tab === 'map') { initMap(restaurants, mapShowCommunity ? communityMapRestaurants : []); }
+  if (tab === 'map') { updateMapCuisineOptions(); initMap(restaurants, mapShowCommunity ? communityMapRestaurants : []); }
   if (tab === 'community') { loadCommunity(); }
 }
 
@@ -747,13 +747,14 @@ function wireMap() {
         } catch(e) { toast('Could not load community restaurants'); }
         btn.textContent = '+ Community';
       }
+      updateMapCuisineOptions();
       refreshMapView();
     });
   });
 
-  document.getElementById('map-filter')?.addEventListener('input', e => {
-    refreshMapView(e.target.value);
-  });
+  document.getElementById('map-filter')?.addEventListener('input', () => refreshMapView());
+  document.getElementById('map-cuisine-filter')?.addEventListener('change', () => refreshMapView());
+  document.getElementById('map-rating-filter')?.addEventListener('change', () => refreshMapView());
 
   document.getElementById('near-me-btn')?.addEventListener('click', () => {
     const status = document.getElementById('near-me-status');
@@ -769,13 +770,31 @@ function wireMap() {
   });
 }
 
-function refreshMapView(search) {
-  const q = (search !== undefined ? search : (document.getElementById('map-filter')?.value || '')).toLowerCase();
-  const mine = q ? restaurants.filter(r => r.name.toLowerCase().includes(q)) : restaurants;
-  const community = mapShowCommunity
-    ? (q ? communityMapRestaurants.filter(r => r.name.toLowerCase().includes(q)) : communityMapRestaurants)
-    : [];
-  refreshMarkers(mine, community);
+function updateMapCuisineOptions() {
+  const sel = document.getElementById('map-cuisine-filter');
+  if (!sel) return;
+  const current = sel.value;
+  const pool = mapShowCommunity ? [...restaurants, ...communityMapRestaurants] : restaurants;
+  const cuisines = [...new Set(pool.map(r => r.cuisine).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All Cuisines</option>' +
+    cuisines.map(c => `<option value="${esc(c)}"${c === current ? ' selected' : ''}>${esc(c)}</option>`).join('');
+}
+
+function refreshMapView() {
+  const q = (document.getElementById('map-filter')?.value || '').toLowerCase();
+  const cuisine = (document.getElementById('map-cuisine-filter')?.value || '').toLowerCase();
+  const minRating = parseFloat(document.getElementById('map-rating-filter')?.value || '0');
+
+  function applyFilters(list) {
+    return list.filter(r => {
+      if (q && !r.name.toLowerCase().includes(q)) return false;
+      if (cuisine && (r.cuisine || '').toLowerCase() !== cuisine) return false;
+      if (minRating && (r.overall || 0) < minRating) return false;
+      return true;
+    });
+  }
+
+  refreshMarkers(applyFilters(restaurants), mapShowCommunity ? applyFilters(communityMapRestaurants) : []);
 }
 
 // ============ COMMUNITY FEED ============
