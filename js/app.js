@@ -1,7 +1,7 @@
 // ============================================================
 // app.js — Main UI logic
 // ============================================================
-import { initAuth, signIn, signUp, signOut, resetPassword, updatePassword, currentUser, currentProfile } from './auth.js';
+import { initAuth, signIn, signUp, signOut, resetPassword, updatePassword, currentUser, currentProfile, sb } from './auth.js';
 import * as DB from './db.js';
 import { initMap, refreshMarkers, locateUser } from './map.js';
 
@@ -210,6 +210,7 @@ async function loadAll() {
     renderRestaurants();
     renderDishes();
     updateProfileTab();
+    setupSocialNotifications();
   } catch(e) {
     toast('Error loading data: ' + e.message);
   }
@@ -1129,6 +1130,52 @@ function timeAgo(dateStr) {
   if (d < 30) return `${d}d ago`;
   if (d < 365) return `${Math.floor(d/30)}mo ago`;
   return `${Math.floor(d/365)}y ago`;
+}
+
+// ============ SOCIAL NOTIFICATIONS ============
+let _socialChannel = null;
+
+async function setupSocialNotifications() {
+  if (!('Notification' in window) || !restaurants.length) return;
+
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+
+  // Tear down any previous channel before resubscribing
+  if (_socialChannel) { sb.removeChannel(_socialChannel); _socialChannel = null; }
+  if (Notification.permission !== 'granted') return;
+
+  const myIds = new Set(restaurants.map(r => r.id));
+  const myId = currentUser?.id;
+
+  _socialChannel = sb.channel('social-notify')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reactions' }, ({ new: row }) => {
+      if (!myIds.has(row.restaurant_id) || row.user_id === myId) return;
+      const name = restaurants.find(r => r.id === row.restaurant_id)?.name || 'your restaurant';
+      const label = row.type === 'up' ? '👍' : row.type === 'down' ? '👎' : row.type;
+      fireNotification(`${label} reaction on ${name}`, 'Someone reacted to your entry');
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, ({ new: row }) => {
+      if (!myIds.has(row.restaurant_id) || row.user_id === myId) return;
+      const name = restaurants.find(r => r.id === row.restaurant_id)?.name || 'your restaurant';
+      fireNotification(`New comment on ${name}`, row.body.slice(0, 100));
+    })
+    .subscribe();
+}
+
+function fireNotification(title, body) {
+  if (Notification.permission !== 'granted') return;
+  navigator.serviceWorker?.ready.then(sw => {
+    sw.showNotification(title, {
+      body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: 'thetable-social',
+      renotify: true,
+      data: { url: window.location.href },
+    });
+  });
 }
 
 function toast(msg) {
