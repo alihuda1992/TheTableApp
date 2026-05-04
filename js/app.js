@@ -16,6 +16,8 @@ let acResults = [];
 let acIndex = -1;
 let acTimer = null;
 let pendingCoords = null;
+let mapShowCommunity = false;
+let communityMapRestaurants = [];
 const ratings = { food: 0, atmosphere: 0, service: 0, noise: 0, value: 0 };
 const ratingFields = ['food', 'atmosphere', 'service', 'noise', 'value'];
 const ratingLabels = { food:'Food Quality', atmosphere:'Atmosphere', service:'Service', noise:'Noise Level', value:'Value' };
@@ -199,7 +201,7 @@ function switchTab(tab) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${tab}`));
   document.querySelector('.app-content').classList.toggle('map-mode', tab === 'map');
-  if (tab === 'map') { initMap(restaurants); }
+  if (tab === 'map') { initMap(restaurants, mapShowCommunity ? communityMapRestaurants : []); }
   if (tab === 'community') { loadCommunity(); }
 }
 
@@ -594,7 +596,7 @@ async function saveRestaurant() {
     }
     closeModal('restaurant-modal');
     renderRestaurants();
-    if (activeTab === 'map') refreshMarkers(restaurants);
+    if (activeTab === 'map') refreshMapView();
     toast(editingRestaurantId ? 'Restaurant updated' : 'Restaurant added!');
   } catch(e) {
     toast('Error saving: ' + e.message);
@@ -731,15 +733,33 @@ async function saveDish() {
 
 // ============ MAP TAB ============
 function wireMap() {
-  document.getElementById('map-filter')?.addEventListener('input', e => {
-    const search = e.target.value.toLowerCase();
-    const filtered = restaurants.filter(r => r.name.toLowerCase().includes(search));
-    refreshMarkers(filtered);
+  document.querySelectorAll('.map-mode-opt').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const mode = btn.dataset.mode;
+      if ((mode === 'community') === mapShowCommunity) return;
+      mapShowCommunity = mode === 'community';
+      document.querySelectorAll('.map-mode-opt').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+      if (mapShowCommunity && !communityMapRestaurants.length) {
+        btn.textContent = 'Loading…';
+        try {
+          const pub = await DB.getPublicRestaurants();
+          communityMapRestaurants = pub.filter(r => !restaurants.some(m => m.id === r.id));
+        } catch(e) { toast('Could not load community restaurants'); }
+        btn.textContent = '+ Community';
+      }
+      refreshMapView();
+    });
   });
+
+  document.getElementById('map-filter')?.addEventListener('input', e => {
+    refreshMapView(e.target.value);
+  });
+
   document.getElementById('near-me-btn')?.addEventListener('click', () => {
     const status = document.getElementById('near-me-status');
     if (status) status.textContent = 'Locating…';
-    locateUser(restaurants, nearest => {
+    const all = mapShowCommunity ? [...restaurants, ...communityMapRestaurants] : restaurants;
+    locateUser(all, nearest => {
       if (nearest) {
         if (status) status.textContent = `Nearest: ${nearest.name} (${nearest.dist.toFixed(1)} km)`;
       } else {
@@ -747,6 +767,15 @@ function wireMap() {
       }
     });
   });
+}
+
+function refreshMapView(search) {
+  const q = (search !== undefined ? search : (document.getElementById('map-filter')?.value || '')).toLowerCase();
+  const mine = q ? restaurants.filter(r => r.name.toLowerCase().includes(q)) : restaurants;
+  const community = mapShowCommunity
+    ? (q ? communityMapRestaurants.filter(r => r.name.toLowerCase().includes(q)) : communityMapRestaurants)
+    : [];
+  refreshMarkers(mine, community);
 }
 
 // ============ COMMUNITY FEED ============

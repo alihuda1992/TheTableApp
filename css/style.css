@@ -792,6 +792,30 @@ input[type="range"] {
 }
 .near-me-btn:hover { background: var(--rust); }
 
+.map-mode-toggle {
+  display: flex;
+  width: 100%;
+  border: 1.5px solid var(--espresso);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.map-mode-opt {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--espresso);
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+}
+.map-mode-opt + .map-mode-opt { border-left: 1.5px solid var(--espresso); }
+.map-mode-opt.active { background: var(--espresso); color: var(--cream); }
+
 @media (max-width: 400px) {
   .map-toolbar input, .near-me-btn { width: 100%; flex: none; }
 }

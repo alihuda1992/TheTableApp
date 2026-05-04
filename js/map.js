@@ -5,10 +5,11 @@
 let map = null;
 let markers = [];
 let userMarker = null;
+let legendEl = null;
 
-export function initMap(restaurants) {
+export function initMap(mine, community = []) {
   if (map) {
-    refreshMarkers(restaurants);
+    refreshMarkers(mine, community);
     return;
   }
   map = L.map('map', { zoomControl: true }).setView([39.5, -98.35], 4);
@@ -17,34 +18,58 @@ export function initMap(restaurants) {
     subdomains: 'abcd',
     maxZoom: 19,
   }).addTo(map);
-  refreshMarkers(restaurants);
+  const legendCtrl = L.control({ position: 'bottomright' });
+  legendCtrl.onAdd = () => {
+    legendEl = L.DomUtil.create('div');
+    legendEl.style.cssText = 'background:white;padding:8px 12px;border-radius:6px;font-family:\'DM Sans\',sans-serif;font-size:0.72rem;line-height:1.9;box-shadow:0 2px 8px rgba(0,0,0,0.15);min-width:110px';
+    renderLegend(false);
+    return legendEl;
+  };
+  legendCtrl.addTo(map);
+  refreshMarkers(mine, community);
 }
 
-export function refreshMarkers(restaurants) {
+function dot(color) {
+  return `<span style="display:inline-block;width:10px;height:10px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.3);margin-right:5px;vertical-align:middle"></span>`;
+}
+
+function renderLegend(showCommunity) {
+  if (!legendEl) return;
+  legendEl.innerHTML = dot('#c0622a') + 'My Places' +
+    (showCommunity ? '<br>' + dot('#2a8d75') + 'Community' : '');
+}
+
+function addMarker(r, color) {
+  const icon = L.divIcon({
+    html: `<div style="width:13px;height:13px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
+    className: '', iconSize: [13, 13], iconAnchor: [6, 6]
+  });
+  const m = L.marker([r.coords.lat, r.coords.lng], { icon })
+    .addTo(map)
+    .bindPopup(popupHtml(r));
+  markers.push(m);
+}
+
+export function refreshMarkers(mine, community = []) {
   if (!map) return;
   markers.forEach(m => map.removeLayer(m));
   markers = [];
-  const withCoords = restaurants.filter(r => r.coords);
-  withCoords.forEach(r => {
-    const icon = L.divIcon({
-      html: `<div style="width:13px;height:13px;background:#c0622a;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
-      className: '', iconSize: [13,13], iconAnchor: [6,6]
-    });
-    const m = L.marker([r.coords.lat, r.coords.lng], { icon })
-      .addTo(map)
-      .bindPopup(popupHtml(r));
-    markers.push(m);
-  });
+  mine.filter(r => r.coords).forEach(r => addMarker(r, '#c0622a'));
+  community.filter(r => r.coords).forEach(r => addMarker(r, '#2a8d75'));
+  renderLegend(community.length > 0);
+  const allWithCoords = [...mine, ...community].filter(r => r.coords);
   if (markers.length === 1) {
-    map.setView([withCoords[0].coords.lat, withCoords[0].coords.lng], 14);
+    map.setView([allWithCoords[0].coords.lat, allWithCoords[0].coords.lng], 14);
   } else if (markers.length > 1) {
     try { map.fitBounds(L.featureGroup(markers).getBounds().pad(0.2)); } catch(e) {}
   }
 }
 
 function popupHtml(r) {
+  const poster = r.profile ? (r.profile.display_name || r.profile.username) : null;
   return `<div style="font-family:'DM Sans',sans-serif;min-width:150px">
     <b style="font-size:0.92rem">${r.name}</b><br>
+    ${poster ? `<span style="font-size:0.74rem;color:#888">by ${poster}</span><br>` : ''}
     ${r.cuisine ? `<span style="font-size:0.74rem;color:#888">${r.cuisine}</span><br>` : ''}
     ${r.city ? `<span style="font-size:0.74rem;color:#888">📍 ${r.city}</span><br>` : ''}
     ${r.overall ? `<span style="font-size:0.74rem">⭐ ${r.overall}/5</span>` : ''}
