@@ -112,6 +112,50 @@ body {
 }
 .auth-error.visible { display: block; }
 
+.oauth-divider {
+  position: relative;
+  text-align: center;
+  margin: 4px 0;
+}
+.oauth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0; right: 0;
+  height: 1px;
+  background: var(--border);
+}
+.oauth-divider span {
+  position: relative;
+  background: var(--card);
+  padding: 0 12px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.oauth-buttons { display: flex; gap: 10px; }
+.oauth-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  background: white;
+  font-family: inherit;
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  min-height: 44px;
+  border-radius: 0;
+}
+.oauth-btn:hover { border-color: var(--espresso); background: #faf8f6; }
+.oauth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
 /* ============ APP SHELL ============ */
 #app-screen { background: var(--cream); height: 100dvh; }
 

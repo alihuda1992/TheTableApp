@@ -10,14 +10,15 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 export const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    // Persist session in localStorage (default) — fine for PWA
     persistSession: true,
-    // Auto-refresh token before expiry
     autoRefreshToken: true,
-    // Detect session from URL hash (needed for email confirm links)
     detectSessionInUrl: true,
   }
 });
+
+// Resolved once at load-time — handles both root and subfolder GitHub Pages deployments.
+// new URL('./', 'https://host/TheTableApp/#hash') → 'https://host/TheTableApp/'
+const APP_URL = new URL('./', window.location.href).href;
 
 // Current user reactive state
 export let currentUser = null;
@@ -109,11 +110,12 @@ export async function signUp(email, password, username, displayName) {
     email: email.toLowerCase().trim(),
     password,
     options: {
+      emailRedirectTo: APP_URL,
       data: {
         username:     username.trim(),
         display_name: (displayName || username).trim().slice(0, 60),
-      }
-    }
+      },
+    },
   });
   if (error) throw error;
   return data;
@@ -146,7 +148,7 @@ export async function signOut() {
 export async function resetPassword(email) {
   if (!validateEmail(email)) throw new Error('Please enter a valid email address.');
   const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + window.location.pathname,
+    redirectTo: APP_URL,
   });
   if (error) throw error;
 }
@@ -159,5 +161,13 @@ export async function updatePassword(newPassword) {
   currentUser = null;
   currentProfile = null;
   await sb.auth.signOut();
+}
+
+export async function signInWithOAuth(provider) {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider,
+    options: { redirectTo: APP_URL },
+  });
+  if (error) throw error;
 }
 

@@ -1,7 +1,7 @@
 // ============================================================
 // app.js — Main UI logic
 // ============================================================
-import { initAuth, signIn, signUp, signOut, resetPassword, updatePassword, currentUser, currentProfile, sb } from './auth.js';
+import { initAuth, signIn, signUp, signOut, resetPassword, updatePassword, signInWithOAuth, currentUser, currentProfile, sb } from './auth.js';
 import * as DB from './db.js';
 import { initMap, refreshMarkers, locateUser, locateUserRadius, geocodeAddress } from './map.js';
 
@@ -170,6 +170,25 @@ function wireAuthForms() {
       showErr(err, e.message || 'Sign up failed.');
     }
     setLoading('signup-btn', false);
+  });
+
+  // OAuth buttons (Google, GitHub — same handler for all)
+  document.querySelectorAll('.oauth-btn[data-provider]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const provider = btn.dataset.provider;
+      btn.disabled = true;
+      btn.textContent = 'Redirecting…';
+      try {
+        await signInWithOAuth(provider);
+        // Browser navigates away; no further handling needed
+      } catch(e) {
+        const activeForm = document.querySelector('.auth-form.active');
+        const errorEl = activeForm?.querySelector('.auth-error');
+        if (errorEl) showErr(errorEl, e.message || `${provider} sign-in failed.`);
+        btn.disabled = false;
+        btn.textContent = provider.charAt(0).toUpperCase() + provider.slice(1);
+      }
+    });
   });
 }
 
