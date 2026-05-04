@@ -184,7 +184,10 @@ function wireAuthForms() {
       } catch(e) {
         const activeForm = document.querySelector('.auth-form.active');
         const errorEl = activeForm?.querySelector('.auth-error');
-        if (errorEl) showErr(errorEl, e.message || `${provider} sign-in failed.`);
+        const msg = (e.message || '').toLowerCase().includes('not enabled')
+          ? `${provider.charAt(0).toUpperCase() + provider.slice(1)} sign-in is not set up yet. Please use email/password.`
+          : (e.message || `${provider} sign-in failed.`);
+        if (errorEl) showErr(errorEl, msg);
         btn.disabled = false;
         btn.textContent = provider.charAt(0).toUpperCase() + provider.slice(1);
       }
