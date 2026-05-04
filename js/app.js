@@ -759,14 +759,29 @@ function wireMap() {
   document.getElementById('near-me-btn')?.addEventListener('click', () => {
     const status = document.getElementById('near-me-status');
     if (status) status.textContent = 'Locating…';
-    const all = mapShowCommunity ? [...restaurants, ...communityMapRestaurants] : restaurants;
-    locateUser(all, nearest => {
+    const filtered = [
+      ...applyMapFilters(restaurants),
+      ...(mapShowCommunity ? applyMapFilters(communityMapRestaurants) : []),
+    ];
+    locateUser(filtered, nearest => {
       if (nearest) {
         if (status) status.textContent = `Nearest: ${nearest.name} (${nearest.dist.toFixed(1)} km)`;
       } else {
-        if (status) status.textContent = 'No mapped restaurants yet';
+        if (status) status.textContent = 'No results match current filters';
       }
     });
+  });
+}
+
+function applyMapFilters(list) {
+  const q = (document.getElementById('map-filter')?.value || '').toLowerCase();
+  const cuisine = (document.getElementById('map-cuisine-filter')?.value || '').toLowerCase();
+  const minRating = parseFloat(document.getElementById('map-rating-filter')?.value || '0');
+  return list.filter(r => {
+    if (q && !r.name.toLowerCase().includes(q)) return false;
+    if (cuisine && (r.cuisine || '').toLowerCase() !== cuisine) return false;
+    if (minRating && (r.overall || 0) < minRating) return false;
+    return true;
   });
 }
 
@@ -781,20 +796,7 @@ function updateMapCuisineOptions() {
 }
 
 function refreshMapView() {
-  const q = (document.getElementById('map-filter')?.value || '').toLowerCase();
-  const cuisine = (document.getElementById('map-cuisine-filter')?.value || '').toLowerCase();
-  const minRating = parseFloat(document.getElementById('map-rating-filter')?.value || '0');
-
-  function applyFilters(list) {
-    return list.filter(r => {
-      if (q && !r.name.toLowerCase().includes(q)) return false;
-      if (cuisine && (r.cuisine || '').toLowerCase() !== cuisine) return false;
-      if (minRating && (r.overall || 0) < minRating) return false;
-      return true;
-    });
-  }
-
-  refreshMarkers(applyFilters(restaurants), mapShowCommunity ? applyFilters(communityMapRestaurants) : []);
+  refreshMarkers(applyMapFilters(restaurants), mapShowCommunity ? applyMapFilters(communityMapRestaurants) : []);
 }
 
 // ============ COMMUNITY FEED ============

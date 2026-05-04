@@ -1,4 +1,4 @@
-const CACHE = 'thetable-v4';
+const CACHE = 'thetable-v5';
 const ASSETS = [
   '/',
   '/index.html',
