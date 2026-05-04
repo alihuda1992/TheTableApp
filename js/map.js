@@ -12,8 +12,9 @@ export function initMap(restaurants) {
     return;
   }
   map = L.map('map', { zoomControl: true }).setView([39.5, -98.35], 4);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://openstreetmap.org">OSM</a>',
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OSM</a> © <a href="https://carto.com">CARTO</a>',
+    subdomains: 'abcd',
     maxZoom: 19,
   }).addTo(map);
   refreshMarkers(restaurants);
@@ -85,10 +86,11 @@ function haversine(lat1, lon1, lat2, lon2) {
 
 export async function geocodeAddress(address) {
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
-    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=1&lang=en`;
+    const res = await fetch(url);
     const data = await res.json();
-    if (data.length) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    const f = data.features?.[0];
+    if (f) return { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] };
   } catch(e) {}
   return null;
 }

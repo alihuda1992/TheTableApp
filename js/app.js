@@ -3,7 +3,7 @@
 // ============================================================
 import { initAuth, signIn, signUp, signOut, resetPassword, updatePassword, currentUser, currentProfile, sb } from './auth.js';
 import * as DB from './db.js';
-import { initMap, refreshMarkers, locateUser } from './map.js';
+import { initMap, refreshMarkers, locateUser, geocodeAddress } from './map.js';
 
 // ============ STATE ============
 let restaurants = [];
@@ -465,26 +465,26 @@ async function doSearch(query) {
   const dropdown = document.getElementById('r-ac');
   const hint = document.getElementById('r-hint');
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&namedetails=1&limit=8&accept-language=en`;
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8&lang=en&osm_tag=amenity`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('Search failed');
     const data = await res.json();
-    acResults = data.slice(0, 7);
+    acResults = (data.features || []).slice(0, 7);
     if (!acResults.length) {
       dropdown.classList.remove('open');
       if (hint) hint.textContent = 'No results — fill in details manually';
       return;
     }
-    dropdown.innerHTML = acResults.map((r, i) => {
-      const addr = r.address || {};
-      const name = r.namedetails?.name || r.display_name.split(',')[0];
-      const city = [addr.city || addr.town || addr.village || addr.county, addr.state].filter(Boolean).join(', ');
-      const road = [addr.house_number ? addr.house_number+' '+addr.road : addr.road].filter(Boolean).join('');
-      const fullAddr = [road, city].filter(Boolean).join(', ');
-      const type = (r.type||'').replace(/_/g,' ');
+    dropdown.innerHTML = acResults.map((f, i) => {
+      const p = f.properties || {};
+      const name = p.name || '';
+      const street = p.housenumber && p.street ? `${p.housenumber} ${p.street}` : (p.street || '');
+      const city = [p.city || p.town || p.village, p.state].filter(Boolean).join(', ');
+      const addr = [street, city].filter(Boolean).join(', ');
+      const type = (p.osm_value || '').replace(/_/g, ' ');
       return `<div class="ac-item" data-i="${i}">
         <div class="ac-item-name">${esc(name)}</div>
-        ${fullAddr ? `<div class="ac-item-addr">${esc(fullAddr)}</div>` : ''}
+        ${addr ? `<div class="ac-item-addr">${esc(addr)}</div>` : ''}
         ${type ? `<div class="ac-item-type">${esc(type)}</div>` : ''}
       </div>`;
     }).join('');
@@ -505,21 +505,22 @@ function highlightAc(items) {
 }
 
 function selectAc(i) {
-  const r = acResults[i];
-  if (!r) return;
-  const addr = r.address || {};
-  const name = r.namedetails?.name || r.display_name.split(',')[0];
-  const road = addr.house_number ? addr.house_number+' '+(addr.road||'') : (addr.road||'');
-  const city = [addr.city||addr.town||addr.village||addr.county, addr.state].filter(Boolean).join(', ');
-  const fullAddr = [road, city, addr.country].filter(Boolean).join(', ');
+  const f = acResults[i];
+  if (!f) return;
+  const p = f.properties || {};
+  const [lng, lat] = f.geometry.coordinates;
+  const name = p.name || '';
+  const street = p.housenumber && p.street ? `${p.housenumber} ${p.street}` : (p.street || '');
+  const city = [p.city || p.town || p.village, p.state].filter(Boolean).join(', ');
+  const fullAddr = [street, city, p.country].filter(Boolean).join(', ');
 
   document.getElementById('rm-name').value = name;
   document.getElementById('rm-city').value = city;
   document.getElementById('rm-address').value = fullAddr;
-  pendingCoords = { lat: parseFloat(r.lat), lng: parseFloat(r.lon) };
+  pendingCoords = { lat, lng };
 
-  const typeMap = { cafe:'Café', bar:'Bar', fast_food:'Fast Food', restaurant:'', bakery:'Bakery', ice_cream:'Dessert' };
-  const guess = typeMap[r.type];
+  const typeMap = { cafe: 'Café', bar: 'Bar', fast_food: 'Fast Food', restaurant: '', bakery: 'Bakery', ice_cream: 'Dessert' };
+  const guess = typeMap[p.osm_value];
   if (guess !== undefined && !document.getElementById('rm-cuisine').value) {
     document.getElementById('rm-cuisine').value = guess;
   }
@@ -567,17 +568,23 @@ async function saveRestaurant() {
   btn.disabled = true; btn.textContent = 'Saving…';
 
   try {
+    const address = document.getElementById('rm-address').value.trim();
+    let coords = pendingCoords;
+    if (!coords && address) {
+      btn.textContent = 'Locating…';
+      coords = await geocodeAddress(address);
+    }
     const form = {
       name,
       cuisine: document.getElementById('rm-cuisine').value.trim(),
       city: document.getElementById('rm-city').value.trim(),
       date: document.getElementById('rm-date').value.trim(),
-      address: document.getElementById('rm-address').value.trim(),
+      address,
       notes: document.getElementById('rm-notes').value.trim(),
       wouldReturn: document.getElementById('rm-return').value,
       isPublic: document.getElementById('rm-public').checked,
       ratings: { ...ratings },
-      coords: pendingCoords,
+      coords,
     };
     const saved = await DB.saveRestaurant(form, editingRestaurantId);
     if (editingRestaurantId) {
