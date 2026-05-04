@@ -3,7 +3,7 @@
 // ============================================================
 import { initAuth, signIn, signUp, signOut, resetPassword, updatePassword, currentUser, currentProfile, sb } from './auth.js';
 import * as DB from './db.js';
-import { initMap, refreshMarkers, locateUser, geocodeAddress } from './map.js';
+import { initMap, refreshMarkers, locateUser, locateUserRadius, geocodeAddress } from './map.js';
 
 // ============ STATE ============
 let restaurants = [];
@@ -763,13 +763,20 @@ function wireMap() {
       ...applyMapFilters(restaurants),
       ...(mapShowCommunity ? applyMapFilters(communityMapRestaurants) : []),
     ];
-    locateUser(filtered, nearest => {
-      if (nearest) {
-        if (status) status.textContent = `Nearest: ${nearest.name} (${nearest.dist.toFixed(1)} km)`;
-      } else {
-        if (status) status.textContent = 'No results match current filters';
-      }
-    });
+    const hasCuisine = !!(document.getElementById('map-cuisine-filter')?.value);
+    if (hasCuisine) {
+      locateUser(filtered, nearest => {
+        if (status) status.textContent = nearest
+          ? `Nearest: ${nearest.name} (${(nearest.dist * 0.621371).toFixed(1)} mi)`
+          : 'No results match current filters';
+      });
+    } else {
+      locateUserRadius(filtered, 10, count => {
+        if (status) status.textContent = count
+          ? `${count} restaurant${count !== 1 ? 's' : ''} within 10 miles`
+          : 'No restaurants within 10 miles';
+      });
+    }
   });
 }
 

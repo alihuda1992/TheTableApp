@@ -6,6 +6,7 @@ let map = null;
 let markers = [];
 let userMarker = null;
 let legendEl = null;
+let radiusCircle = null;
 
 export function initMap(mine, community = []) {
   if (map) {
@@ -76,22 +77,27 @@ function popupHtml(r) {
   </div>`;
 }
 
+function placeUserMarker(lat, lng) {
+  if (userMarker) map.removeLayer(userMarker);
+  if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
+  const youIcon = L.divIcon({
+    html: `<div style="width:15px;height:15px;background:#3b82f6;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(59,130,246,0.5)"></div>`,
+    className: '', iconSize: [15, 15], iconAnchor: [7, 7]
+  });
+  userMarker = L.marker([lat, lng], { icon: youIcon }).addTo(map).bindPopup('<b>You are here</b>');
+}
+
 export function locateUser(restaurants, onFound) {
   if (!navigator.geolocation) { alert('Geolocation not supported.'); return; }
   navigator.geolocation.getCurrentPosition(pos => {
     const { latitude: lat, longitude: lng } = pos.coords;
-    if (userMarker) map.removeLayer(userMarker);
-    const youIcon = L.divIcon({
-      html: `<div style="width:15px;height:15px;background:#3b82f6;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(59,130,246,0.5)"></div>`,
-      className: '', iconSize: [15,15], iconAnchor: [7,7]
-    });
-    userMarker = L.marker([lat, lng], { icon: youIcon }).addTo(map).bindPopup('<b>You are here</b>');
+    placeUserMarker(lat, lng);
     const withCoords = restaurants.filter(r => r.coords);
     if (withCoords.length) {
       const sorted = withCoords.map(r => ({
         ...r,
         dist: haversine(lat, lng, r.coords.lat, r.coords.lng)
-      })).sort((a,b) => a.dist - b.dist);
+      })).sort((a, b) => a.dist - b.dist);
       onFound(sorted[0]);
       const allPts = [...markers.map(m => m.getLatLng()), { lat, lng }];
       map.fitBounds(L.latLngBounds(allPts).pad(0.25));
@@ -99,6 +105,32 @@ export function locateUser(restaurants, onFound) {
       map.setView([lat, lng], 12);
       onFound(null);
     }
+  }, () => alert('Could not get location. Please allow location access.'));
+}
+
+export function locateUserRadius(restaurants, radiusMiles, onFound) {
+  if (!navigator.geolocation) { alert('Geolocation not supported.'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude: lat, longitude: lng } = pos.coords;
+    placeUserMarker(lat, lng);
+
+    const radiusKm = radiusMiles * 1.60934;
+    radiusCircle = L.circle([lat, lng], {
+      radius: radiusKm * 1000,
+      color: '#c0622a',
+      fillColor: '#c0622a',
+      fillOpacity: 0.05,
+      weight: 1.5,
+      dashArray: '6 4',
+    }).addTo(map);
+
+    // Fit map to the circle's bounding box
+    const latDeg = radiusMiles / 69.0;
+    const lngDeg = radiusMiles / (Math.cos(lat * Math.PI / 180) * 69.0);
+    map.fitBounds([[lat - latDeg, lng - lngDeg], [lat + latDeg, lng + lngDeg]], { padding: [20, 20] });
+
+    const nearby = restaurants.filter(r => r.coords && haversine(lat, lng, r.coords.lat, r.coords.lng) <= radiusKm);
+    onFound(nearby.length);
   }, () => alert('Could not get location. Please allow location access.'));
 }
 
