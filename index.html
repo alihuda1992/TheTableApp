@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-<!-- ══ SECURITY HEADERS (also add these in GitHub Pages via _headers file) ══ -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
   script-src  'self' https://cdn.jsdelivr.net https://unpkg.com;
@@ -25,10 +24,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Table">
-<meta name="theme-color" content="#3d2b1f">
+<meta name="theme-color" content="#0B0908">
 <title>The Table</title>
 
-<!-- PWA / Icons -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 
@@ -48,107 +46,205 @@
      AUTH SCREEN
 ════════════════════════════════════════════ -->
 <div id="auth-screen" class="screen">
-  <div class="auth-logo">The <em>Table</em></div>
-  <div class="auth-tagline">Your personal restaurant journal</div>
 
-  <div class="auth-card">
-    <div class="auth-tabs">
-      <button class="auth-tab active" data-form="signin-form">Sign In</button>
-      <button class="auth-tab" data-form="signup-form">Sign Up</button>
+  <!-- ── View 1: Entrance splash ── -->
+  <div class="auth-view active" id="auth-entrance">
+    <div class="auth-hero-wrap">
+      <div class="auth-hero-photo"></div>
+      <div class="auth-hero-overlay"></div>
     </div>
 
-    <!-- Sign In -->
-    <div class="auth-form active" id="signin-form">
-      <div class="auth-error" id="signin-error"></div>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="si-email" placeholder="you@example.com" autocomplete="email">
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="si-password" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <button class="btn-primary" id="signin-btn" data-label="Sign In" style="width:100%">Sign In</button>
-      <div style="text-align:center;margin-top:14px">
-        <button id="forgot-link" style="background:none;border:none;color:var(--sage);font-size:0.8rem;cursor:pointer;text-decoration:underline;padding:4px">Forgot password?</button>
-      </div>
-      <div class="oauth-divider"><span>or continue with</span></div>
-      <div class="oauth-buttons">
-        <button type="button" class="oauth-btn" data-provider="google">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-          Google
-        </button>
-        <button type="button" class="oauth-btn" data-provider="github">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-          GitHub
-        </button>
-      </div>
+    <div class="auth-entrance-top">
+      <span>Est. MMXXVI</span>
+      <span>No. 001</span>
     </div>
 
-    <!-- Sign Up -->
-    <div class="auth-form" id="signup-form">
-      <div class="auth-error" id="signup-error"></div>
-      <div class="oauth-buttons" style="margin-bottom:18px">
-        <button type="button" class="oauth-btn" data-provider="google">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-          Continue with Google
+    <div class="auth-entrance-bottom">
+      <div>
+        <div class="tt-brass-label" style="margin-bottom:22px">A private journal</div>
+        <div class="auth-wordmark-hero">The <em>Table</em></div>
+        <p class="auth-entrance-tagline">A reserved record of the rooms you've sat in, the dishes worth remembering, and the company you kept.</p>
+      </div>
+
+      <div class="auth-cta-stack">
+        <button class="btn-solid" id="entrance-signin-btn">Sign in</button>
+        <button class="btn-ghost" id="entrance-signup-btn">Request membership</button>
+        <div class="oauth-gap"></div>
+        <button type="button" class="oauth-btn-tt oauth-btn" data-provider="google">
+          <span class="oauth-mark">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3.2-6.9"/><path d="M12 12 H21"/></svg>
+          </span>
+          <span class="oauth-label">Continue with Google</span>
+          <span class="oauth-arrow">↗</span>
         </button>
-        <button type="button" class="oauth-btn" data-provider="github">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-          Continue with GitHub
+        <button type="button" class="oauth-btn-tt oauth-btn" data-provider="github">
+          <span class="oauth-mark">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.72-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.49-1.11-1.49-.91-.63.07-.62.07-.62 1 .07 1.53 1.05 1.53 1.05.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.55-1.13-4.55-5.04 0-1.11.39-2.02 1.03-2.74-.1-.26-.45-1.3.1-2.7 0 0 .84-.27 2.75 1.05A9.36 9.36 0 0 1 12 6.79c.85 0 1.71.12 2.51.34 1.91-1.32 2.75-1.05 2.75-1.05.55 1.4.2 2.44.1 2.7.64.72 1.03 1.63 1.03 2.74 0 3.92-2.34 4.78-4.57 5.03.36.32.68.94.68 1.9 0 1.37-.01 2.48-.01 2.81 0 .27.18.6.69.49C19.14 20.62 22 16.78 22 12.25 22 6.58 17.52 2 12 2z"/></svg>
+          </span>
+          <span class="oauth-label">Continue with GitHub</span>
+          <span class="oauth-arrow">↗</span>
         </button>
       </div>
-      <div class="oauth-divider"><span>or sign up with email</span></div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Username *</label>
-          <input type="text" id="su-username" placeholder="foodie_ali" autocomplete="username">
-        </div>
-        <div class="form-group">
-          <label>Display Name</label>
-          <input type="text" id="su-name" placeholder="Ali" autocomplete="name">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Email *</label>
-        <input type="email" id="su-email" placeholder="you@example.com" autocomplete="email">
-      </div>
-      <div class="form-group">
-        <label>Password *</label>
-        <input type="password" id="su-password" placeholder="Min. 6 characters" autocomplete="new-password">
-      </div>
-      <button class="btn-primary" id="signup-btn" data-label="Create Account" style="width:100%">Create Account</button>
-    </div>
 
-    <!-- Forgot Password -->
-    <div class="auth-form" id="forgot-form">
-      <div class="auth-error" id="forgot-error"></div>
-      <p style="font-size:0.83rem;color:var(--muted);margin-bottom:16px">Enter your email and we'll send a reset link.<br><br>Note: you sign in with your <strong>email</strong>, not your username — so there's no username to recover.</p>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="fp-email" placeholder="you@example.com" autocomplete="email">
-      </div>
-      <button class="btn-primary" id="forgot-btn" data-label="Send Reset Link" style="width:100%">Send Reset Link</button>
-      <button id="forgot-back" style="background:none;border:none;color:var(--sage);font-size:0.8rem;cursor:pointer;text-decoration:underline;padding:10px 4px 4px;display:block;margin:0 auto">← Back to Sign In</button>
+      <div class="auth-byline">By invitation only</div>
     </div>
-
-    <!-- Set New Password (shown after clicking reset email link) -->
-    <div class="auth-form" id="new-password-form">
-      <div class="auth-error" id="np-error"></div>
-      <p style="font-size:0.83rem;color:var(--muted);margin-bottom:16px">Choose a new password for your account.</p>
-      <div class="form-group">
-        <label>New Password</label>
-        <input type="password" id="np-password" placeholder="Min. 8 characters" autocomplete="new-password">
-      </div>
-      <div class="form-group">
-        <label>Confirm Password</label>
-        <input type="password" id="np-confirm" placeholder="Repeat password" autocomplete="new-password">
-      </div>
-      <button class="btn-primary" id="np-btn" data-label="Set New Password" style="width:100%">Set New Password</button>
-    </div>
-
   </div>
-</div>
+
+  <!-- ── View 2: Sign In ── -->
+  <div class="auth-view" id="signin-form">
+    <div class="auth-form-view-header">
+      <button class="auth-back" id="signin-back">← Back</button>
+      <div class="auth-wordmark-sm">The <em>Table</em></div>
+      <div></div>
+    </div>
+    <div class="auth-form-body">
+      <div class="tt-brass-label">Members entrance</div>
+      <h1 class="auth-heading">Welcome <em>back</em>.</h1>
+      <div class="auth-error" id="signin-error"></div>
+      <div class="auth-fields">
+        <div class="tt-field">
+          <label class="tt-field-label" for="si-email">Email</label>
+          <input type="email" id="si-email" class="tt-field-input" autocomplete="email">
+        </div>
+        <div class="tt-field">
+          <label class="tt-field-label" for="si-password">Password</label>
+          <input type="password" id="si-password" class="tt-field-input" autocomplete="current-password">
+        </div>
+      </div>
+      <div class="auth-forgot-row">
+        <button id="forgot-link" class="tt-text-btn">Forgot password?</button>
+      </div>
+      <button class="btn-solid" id="signin-btn" data-label="Enter" style="width:100%;margin-top:24px">Enter</button>
+      <div class="auth-or-row">
+        <div class="auth-or-line"></div>
+        <span class="auth-or-text">or</span>
+        <div class="auth-or-line"></div>
+      </div>
+      <div class="auth-oauth-stack">
+        <button type="button" class="oauth-btn-tt oauth-btn" data-provider="google">
+          <span class="oauth-mark">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3.2-6.9"/><path d="M12 12 H21"/></svg>
+          </span>
+          <span class="oauth-label">Continue with Google</span>
+          <span class="oauth-arrow">↗</span>
+        </button>
+        <button type="button" class="oauth-btn-tt oauth-btn" data-provider="github">
+          <span class="oauth-mark">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.72-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.49-1.11-1.49-.91-.63.07-.62.07-.62 1 .07 1.53 1.05 1.53 1.05.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.55-1.13-4.55-5.04 0-1.11.39-2.02 1.03-2.74-.1-.26-.45-1.3.1-2.7 0 0 .84-.27 2.75 1.05A9.36 9.36 0 0 1 12 6.79c.85 0 1.71.12 2.51.34 1.91-1.32 2.75-1.05 2.75-1.05.55 1.4.2 2.44.1 2.7.64.72 1.03 1.63 1.03 2.74 0 3.92-2.34 4.78-4.57 5.03.36.32.68.94.68 1.9 0 1.37-.01 2.48-.01 2.81 0 .27.18.6.69.49C19.14 20.62 22 16.78 22 12.25 22 6.58 17.52 2 12 2z"/></svg>
+          </span>
+          <span class="oauth-label">Continue with GitHub</span>
+          <span class="oauth-arrow">↗</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── View 3: Sign Up ── -->
+  <div class="auth-view" id="signup-form">
+    <div class="auth-form-view-header">
+      <button class="auth-back" id="signup-back">← Back</button>
+      <div class="auth-wordmark-sm">The <em>Table</em></div>
+      <div></div>
+    </div>
+    <div class="auth-form-body">
+      <div class="tt-brass-label">New membership</div>
+      <h1 class="auth-heading">Join <em>the table</em>.</h1>
+      <div class="auth-error" id="signup-error"></div>
+      <div class="auth-oauth-stack" style="margin-bottom:28px">
+        <button type="button" class="oauth-btn-tt oauth-btn" data-provider="google">
+          <span class="oauth-mark">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3.2-6.9"/><path d="M12 12 H21"/></svg>
+          </span>
+          <span class="oauth-label">Continue with Google</span>
+          <span class="oauth-arrow">↗</span>
+        </button>
+        <button type="button" class="oauth-btn-tt oauth-btn" data-provider="github">
+          <span class="oauth-mark">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.72-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.49-1.11-1.49-.91-.63.07-.62.07-.62 1 .07 1.53 1.05 1.53 1.05.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.55-1.13-4.55-5.04 0-1.11.39-2.02 1.03-2.74-.1-.26-.45-1.3.1-2.7 0 0 .84-.27 2.75 1.05A9.36 9.36 0 0 1 12 6.79c.85 0 1.71.12 2.51.34 1.91-1.32 2.75-1.05 2.75-1.05.55 1.4.2 2.44.1 2.7.64.72 1.03 1.63 1.03 2.74 0 3.92-2.34 4.78-4.57 5.03.36.32.68.94.68 1.9 0 1.37-.01 2.48-.01 2.81 0 .27.18.6.69.49C19.14 20.62 22 16.78 22 12.25 22 6.58 17.52 2 12 2z"/></svg>
+          </span>
+          <span class="oauth-label">Continue with GitHub</span>
+          <span class="oauth-arrow">↗</span>
+        </button>
+      </div>
+      <div class="auth-or-row">
+        <div class="auth-or-line"></div>
+        <span class="auth-or-text">or sign up with email</span>
+        <div class="auth-or-line"></div>
+      </div>
+      <div class="auth-fields">
+        <div class="form-row">
+          <div class="tt-field">
+            <label class="tt-field-label" for="su-username">Username *</label>
+            <input type="text" id="su-username" class="tt-field-input" autocomplete="username">
+          </div>
+          <div class="tt-field">
+            <label class="tt-field-label" for="su-name">Display Name</label>
+            <input type="text" id="su-name" class="tt-field-input" autocomplete="name">
+          </div>
+        </div>
+        <div class="tt-field">
+          <label class="tt-field-label" for="su-email">Email *</label>
+          <input type="email" id="su-email" class="tt-field-input" autocomplete="email">
+        </div>
+        <div class="tt-field">
+          <label class="tt-field-label" for="su-password">Password *</label>
+          <input type="password" id="su-password" class="tt-field-input" autocomplete="new-password">
+        </div>
+      </div>
+      <button class="btn-solid" id="signup-btn" data-label="Create Account" style="width:100%;margin-top:28px">Create Account</button>
+    </div>
+  </div>
+
+  <!-- ── View 4: Forgot Password ── -->
+  <div class="auth-view" id="forgot-form">
+    <div class="auth-form-view-header">
+      <button class="auth-back" id="forgot-back">← Back</button>
+      <div class="auth-wordmark-sm">The <em>Table</em></div>
+      <div></div>
+    </div>
+    <div class="auth-form-body">
+      <div class="tt-brass-label">Password reset</div>
+      <h1 class="auth-heading">Recover <em>access</em>.</h1>
+      <p style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--tt-dim);line-height:1.9;margin-bottom:32px">Enter your email address and we will send a reset link to your inbox. Note — sign in uses your email address, not your username.</p>
+      <div class="auth-error" id="forgot-error"></div>
+      <div class="auth-fields">
+        <div class="tt-field">
+          <label class="tt-field-label" for="fp-email">Email</label>
+          <input type="email" id="fp-email" class="tt-field-input" autocomplete="email">
+        </div>
+      </div>
+      <button class="btn-solid" id="forgot-btn" data-label="Send Reset Link" style="width:100%;margin-top:36px">Send Reset Link</button>
+    </div>
+  </div>
+
+  <!-- ── View 5: Set New Password (after reset link) ── -->
+  <div class="auth-view" id="new-password-form">
+    <div class="auth-form-view-header">
+      <div></div>
+      <div class="auth-wordmark-sm">The <em>Table</em></div>
+      <div></div>
+    </div>
+    <div class="auth-form-body">
+      <div class="tt-brass-label">New password</div>
+      <h1 class="auth-heading">Set new <em>password</em>.</h1>
+      <p style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--tt-dim);line-height:1.9;margin-bottom:32px">Choose a new password for your account.</p>
+      <div class="auth-error" id="np-error"></div>
+      <div class="auth-fields">
+        <div class="tt-field">
+          <label class="tt-field-label" for="np-password">New Password</label>
+          <input type="password" id="np-password" class="tt-field-input" autocomplete="new-password">
+        </div>
+        <div class="tt-field">
+          <label class="tt-field-label" for="np-confirm">Confirm Password</label>
+          <input type="password" id="np-confirm" class="tt-field-input" autocomplete="new-password">
+        </div>
+      </div>
+      <button class="btn-solid" id="np-btn" data-label="Set New Password" style="width:100%;margin-top:36px">Set New Password</button>
+    </div>
+  </div>
+
+</div><!-- /#auth-screen -->
+
 
 <!-- ═══════════════════════════════════════════
      APP SCREEN
@@ -160,9 +256,9 @@
     <div class="header-row">
       <div class="app-logo">The <em>Table</em></div>
       <div class="header-actions">
-        <button class="icon-btn" id="add-restaurant-btn" title="Add Restaurant">＋🍽</button>
-        <button class="icon-btn" id="add-dish-btn" title="Add Dish">＋🥘</button>
-        <button class="icon-btn" id="signout-btn" title="Sign Out">⎋</button>
+        <button class="icon-btn" id="add-restaurant-btn" title="Add Restaurant">+</button>
+        <button class="icon-btn" id="add-dish-btn" title="Add Dish" style="font-size:9px">+ dish</button>
+        <button class="icon-btn" id="signout-btn" title="Sign Out">out</button>
       </div>
     </div>
   </header>
@@ -170,11 +266,11 @@
   <!-- Content area -->
   <div class="app-content">
 
-    <!-- ── RESTAURANTS TAB ── -->
+    <!-- ── JOURNAL TAB ── -->
     <div class="tab-panel active" id="tab-restaurants">
       <div class="section-head">
         <div>
-          <div class="section-title">My <span>Restaurants</span></div>
+          <div class="section-title">The <span>Journal</span></div>
           <div class="count-label" id="r-count"></div>
         </div>
       </div>
@@ -194,17 +290,17 @@
     <div class="tab-panel" id="tab-map" style="padding:0">
       <div class="map-toolbar">
         <input type="text" id="map-filter" placeholder="Search restaurants…">
-        <button class="near-me-btn" id="near-me-btn">📍 Near Me</button>
+        <button class="near-me-btn" id="near-me-btn">Locate</button>
         <div class="map-filters">
           <select id="map-cuisine-filter">
             <option value="">All Cuisines</option>
           </select>
           <select id="map-rating-filter">
             <option value="">Any Rating</option>
-            <option value="3">3+ ★</option>
-            <option value="3.5">3.5+ ★</option>
-            <option value="4">4+ ★</option>
-            <option value="4.5">4.5+ ★</option>
+            <option value="3">3+</option>
+            <option value="3.5">3.5+</option>
+            <option value="4">4+</option>
+            <option value="4.5">4.5+</option>
           </select>
         </div>
         <div class="map-mode-toggle">
@@ -212,18 +308,24 @@
           <button class="map-mode-opt" data-mode="community">+ Community</button>
         </div>
       </div>
-      <div id="near-me-status" style="padding:6px 16px;font-size:0.75rem;color:var(--sage);font-style:italic;background:white;border-bottom:1px solid var(--border)"></div>
+      <div id="near-me-status"></div>
       <div id="map-container"><div id="map"></div></div>
     </div>
 
-    <!-- ── COMMUNITY TAB ── -->
+    <!-- ── SALON TAB ── -->
     <div class="tab-panel" id="tab-community">
+      <div class="section-head" style="margin-bottom:20px">
+        <div>
+          <div class="section-title">The <span>Salon</span></div>
+          <div class="count-label" id="salon-subtitle" style="margin-top:8px">Notes from the table</div>
+        </div>
+      </div>
       <div id="community-feed">
-        <div class="empty-state"><div class="empty-icon">🌍</div><h3>Community</h3><p>Switch to this tab to load the community feed.</p></div>
+        <div class="empty-state"><h3>The Salon</h3><p>Switch to this tab to load the community feed.</p></div>
       </div>
     </div>
 
-    <!-- ── PROFILE TAB ── -->
+    <!-- ── SELF TAB ── -->
     <div class="tab-panel" id="tab-profile">
       <div id="profile-content">
         <div class="loading-spinner"><div class="spinner"></div> Loading…</div>
@@ -234,21 +336,15 @@
 
   <!-- Bottom Navigation -->
   <nav class="bottom-nav">
-    <button class="nav-item active" data-tab="restaurants">
-      <span class="nav-icon">🍽</span>My Journal
-    </button>
-    <button class="nav-item" data-tab="map">
-      <span class="nav-icon">🗺</span>Map
-    </button>
-    <button class="nav-item" data-tab="community">
-      <span class="nav-icon">🌍</span>Community
-    </button>
-    <button class="nav-item" data-tab="profile">
-      <span class="nav-icon">👤</span>Profile
-    </button>
+    <div class="bottom-nav-glass">
+      <button class="nav-item active" data-tab="restaurants">Journal</button>
+      <button class="nav-item" data-tab="map">Map</button>
+      <button class="nav-item" data-tab="community">Salon</button>
+      <button class="nav-item" data-tab="profile">Self</button>
+    </div>
   </nav>
 
-</div><!-- /app-screen -->
+</div><!-- /#app-screen -->
 
 
 <!-- ═══════════════════════════════════════════
@@ -261,7 +357,7 @@
     <div class="modal-handle"></div>
     <div class="modal-header">
       <div class="modal-title" id="rm-title">Add Restaurant</div>
-      <button class="modal-close">✕</button>
+      <button class="modal-close">&#x2715;</button>
     </div>
     <div class="modal-body">
 
@@ -306,7 +402,6 @@
         <input type="text" id="rm-address" placeholder="Auto-filled from search">
       </div>
 
-      <!-- Ratings -->
       <div class="form-group">
         <label>Ratings</label>
         <div class="rating-group">
@@ -339,14 +434,14 @@
       </div>
 
       <div class="form-group">
-        <label>Notes & Impressions</label>
+        <label>Notes &amp; Impressions</label>
         <textarea id="rm-notes" placeholder="What stood out? Memorable moments…"></textarea>
       </div>
 
       <div class="toggle-row">
         <div>
           <div class="toggle-label">Share publicly</div>
-          <div class="toggle-sub">Visible in the community feed</div>
+          <div class="toggle-sub">Visible in the salon</div>
         </div>
         <label class="toggle">
           <input type="checkbox" id="rm-public">
@@ -369,7 +464,7 @@
     <div class="modal-handle"></div>
     <div class="modal-header">
       <div class="modal-title" id="dm-title">Add Dish</div>
-      <button class="modal-close">✕</button>
+      <button class="modal-close">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
@@ -406,7 +501,7 @@
       <div class="toggle-row">
         <div>
           <div class="toggle-label">Share publicly</div>
-          <div class="toggle-sub">Visible in the community feed</div>
+          <div class="toggle-sub">Visible in the salon</div>
         </div>
         <label class="toggle">
           <input type="checkbox" id="dm-public">
@@ -428,9 +523,9 @@
     <div class="modal-header">
       <div>
         <div class="modal-title" id="view-name"></div>
-        <div class="text-muted" id="view-meta" style="margin-top:3px;font-size:0.75rem"></div>
+        <div class="text-muted" id="view-meta" style="margin-top:4px"></div>
       </div>
-      <button class="modal-close">✕</button>
+      <button class="modal-close">&#x2715;</button>
     </div>
     <div class="modal-body" id="view-body"></div>
   </div>

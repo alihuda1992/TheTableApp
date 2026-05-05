@@ -53,22 +53,24 @@ function registerSW() {
 }
 
 // ============ AUTH UI ============
+function showAuthView(id) {
+  document.querySelectorAll('.auth-view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.auth-error').forEach(e => {
+    e.classList.remove('visible', 'success');
+  });
+  document.getElementById(id)?.classList.add('active');
+}
+
 function showAuth() {
   document.getElementById('auth-screen').classList.add('active');
   document.getElementById('app-screen').classList.remove('active');
-  // Restore tabs and sign-in form
-  document.querySelector('.auth-tabs').style.display = '';
-  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-  document.getElementById('signin-form').classList.add('active');
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.form === 'signin-form'));
+  showAuthView('auth-entrance');
 }
 
 function showPasswordRecoveryForm() {
   document.getElementById('auth-screen').classList.add('active');
   document.getElementById('app-screen').classList.remove('active');
-  document.querySelector('.auth-tabs').style.display = 'none';
-  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-  document.getElementById('new-password-form').classList.add('active');
+  showAuthView('new-password-form');
 }
 function showApp() {
   document.getElementById('auth-screen').classList.remove('active');
@@ -77,31 +79,19 @@ function showApp() {
 }
 
 function wireAuthForms() {
-  // Tab switching
-  document.querySelectorAll('.auth-tab').forEach(t => {
-    t.addEventListener('click', () => {
-      document.querySelectorAll('.auth-tab').forEach(x => x.classList.remove('active'));
-      document.querySelectorAll('.auth-form').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      document.getElementById(t.dataset.form).classList.add('active');
-      document.querySelectorAll('.auth-error').forEach(e => e.classList.remove('visible'));
-    });
-  });
+  // Entrance → forms
+  document.getElementById('entrance-signin-btn')?.addEventListener('click', () => showAuthView('signin-form'));
+  document.getElementById('entrance-signup-btn')?.addEventListener('click', () => showAuthView('signup-form'));
 
-  // Forgot password link
-  document.getElementById('forgot-link')?.addEventListener('click', () => {
-    document.querySelector('.auth-tabs').style.display = 'none';
-    document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-    document.getElementById('forgot-form').classList.add('active');
-  });
+  // Back buttons
+  document.getElementById('signin-back')?.addEventListener('click', () => showAuthView('auth-entrance'));
+  document.getElementById('signup-back')?.addEventListener('click', () => showAuthView('auth-entrance'));
 
-  // Back to sign in
-  document.getElementById('forgot-back')?.addEventListener('click', () => {
-    document.querySelector('.auth-tabs').style.display = '';
-    document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-    document.getElementById('signin-form').classList.add('active');
-    document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.form === 'signin-form'));
-  });
+  // Forgot password link (from sign-in form)
+  document.getElementById('forgot-link')?.addEventListener('click', () => showAuthView('forgot-form'));
+
+  // Back from forgot → sign-in
+  document.getElementById('forgot-back')?.addEventListener('click', () => showAuthView('signin-form'));
 
   // Send reset link
   document.getElementById('forgot-btn')?.addEventListener('click', async () => {
@@ -176,20 +166,21 @@ function wireAuthForms() {
   document.querySelectorAll('.oauth-btn[data-provider]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const provider = btn.dataset.provider;
+      const labelEl = btn.querySelector('.oauth-label') || btn;
+      const origLabel = labelEl.textContent;
       btn.disabled = true;
-      btn.textContent = 'Redirecting…';
+      labelEl.textContent = 'Redirecting…';
       try {
         await signInWithOAuth(provider);
-        // Browser navigates away; no further handling needed
       } catch(e) {
-        const activeForm = document.querySelector('.auth-form.active');
-        const errorEl = activeForm?.querySelector('.auth-error');
+        const activeView = document.querySelector('.auth-view.active');
+        const errorEl = activeView?.querySelector('.auth-error');
         const msg = (e.message || '').toLowerCase().includes('not enabled')
           ? `${provider.charAt(0).toUpperCase() + provider.slice(1)} sign-in is not set up yet. Please use email/password.`
           : (e.message || `${provider} sign-in failed.`);
         if (errorEl) showErr(errorEl, msg);
         btn.disabled = false;
-        btn.textContent = provider.charAt(0).toUpperCase() + provider.slice(1);
+        labelEl.textContent = origLabel;
       }
     });
   });
@@ -197,8 +188,7 @@ function wireAuthForms() {
 
 function showErr(el, msg, success = false) {
   el.textContent = msg;
-  el.style.color = success ? 'var(--sage)' : '';
-  el.style.borderLeftColor = success ? 'var(--sage)' : '';
+  el.classList.toggle('success', success);
   el.classList.add('visible');
 }
 
@@ -280,17 +270,17 @@ function restaurantCardHtml(r) {
     <div class="card-body">
       <div class="card-name">${esc(r.name)}</div>
       <div class="card-meta">
-        ${r.cuisine ? `<span>🍴 ${esc(r.cuisine)}</span>` : ''}
-        ${r.city ? `<span>📍 ${esc(r.city)}</span>` : ''}
-        ${r.date ? `<span>🗓 ${esc(fmtDate(r.date))}</span>` : ''}
+        ${r.cuisine ? `<span>${esc(r.cuisine)}</span>` : ''}
+        ${r.city ? `<span>${esc(r.city)}</span>` : ''}
+        ${r.date ? `<span>${esc(fmtDate(r.date))}</span>` : ''}
       </div>
       <div class="card-scores">${scores}</div>
       ${r.notes ? `<div class="card-notes">${esc(r.notes)}</div>` : ''}
     </div>
     <div class="card-footer">
       ${r.overall ? `<span class="badge"><span class="badge-num">${r.overall}</span>&nbsp;/ 5</span>` : ''}
-      ${r.wouldReturn ? `<span style="font-size:0.7rem;color:var(--muted)">${returnLabels[r.wouldReturn]||''}</span>` : ''}
-      ${dishCount ? `<span style="font-size:0.7rem;color:var(--muted)">🥘 ${dishCount} dish${dishCount>1?'es':''}</span>` : ''}
+      ${r.wouldReturn ? `<span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--tt-dim)">${returnLabels[r.wouldReturn]||''}</span>` : ''}
+      ${dishCount ? `<span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--tt-dim)">${dishCount} dish${dishCount>1?'es':''}</span>` : ''}
       ${r.isPublic ? `<span class="public-tag">Public</span>` : ''}
     </div>
   </div>`;
@@ -340,8 +330,8 @@ function renderViewModal() {
           <div class="inline-dish-denom">/ 10</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:2px">
-          <button class="btn-icon" data-action="edit-dish" data-id="${d.id}">✏️</button>
-          <button class="btn-icon" data-action="del-dish" data-id="${d.id}">🗑</button>
+          <button class="btn-icon" data-action="edit-dish" data-id="${d.id}" style="font-size:11px;letter-spacing:1px">edit</button>
+          <button class="btn-icon" data-action="del-dish" data-id="${d.id}" style="font-size:11px;letter-spacing:1px">del</button>
         </div>
       </div>
     </div>`;
@@ -357,7 +347,7 @@ function renderViewModal() {
     </div>
 
     <div class="view-panel${activePanelId === 'vp-overview' ? ' active' : ''}" id="vp-overview">
-      ${r.address?`<div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px">📍 ${esc(r.address)}</div>`:''}
+      ${r.address?`<div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--tt-dim);margin-bottom:14px">${esc(r.address)}</div>`:''}
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
         ${r.overall?`<span class="badge"><span class="badge-num">${r.overall}</span>&nbsp;/ 5 avg</span>`:''}
         ${r.wouldReturn?`<span style="font-size:0.73rem;color:var(--muted);padding:3px 10px;border:1px solid var(--border)">${returnLabels[r.wouldReturn]}</span>`:''}
@@ -858,7 +848,7 @@ function buildCommunityCard(r, reactMap, commentCounts) {
     <div class="card-accent"></div>
     <div class="card-body" style="padding-top:12px">
       <div class="card-name">${esc(r.name)}</div>
-      <div class="card-meta">${r.cuisine?`<span>🍴 ${esc(r.cuisine)}</span>`:''}</div>
+      <div class="card-meta">${r.cuisine?`<span>${esc(r.cuisine)}</span>`:''}</div>
       <div class="card-scores">${scores}</div>
       ${r.notes?`<div class="card-notes">${esc(r.notes)}</div>`:''}
     </div>
@@ -1111,12 +1101,8 @@ function updateProfileTab() {
 }
 
 function updateProfileNav() {
-  const profile = currentProfile;
-  if (!profile) return;
-  const initials = (profile.display_name || profile.username || '?').slice(0,2).toUpperCase();
-  const color = profile.avatar_color || '#c0622a';
-  const navIcon = document.querySelector('[data-tab="profile"] .nav-icon');
-  if (navIcon) navIcon.innerHTML = `<span style="width:22px;height:22px;border-radius:50%;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:600;color:white">${initials}</span>`;
+  // No-op — nav is purely typographic in the redesign.
+  // Profile initials are shown in the profile tab header.
 }
 
 // ============ MODAL SYSTEM ============
