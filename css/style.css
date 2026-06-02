@@ -81,13 +81,91 @@ body {
 }
 .auth-hero-photo {
   width: 100%; height: 100%;
-  background: repeating-linear-gradient(135deg, #1A1614 0 8px, #15110F 8px 16px);
+  position: relative;
+  overflow: hidden;
+  background: #0C0905;
 }
+
+/* Warm candlelight glow that drifts slowly across the frame */
+.auth-hero-photo::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background:
+    radial-gradient(ellipse 42% 52% at 44% 54%, rgba(197,113,58,0.42) 0%, rgba(201,176,104,0.10) 48%, transparent 70%),
+    radial-gradient(ellipse 28% 32% at 72% 22%, rgba(201,176,104,0.20) 0%, transparent 55%),
+    radial-gradient(ellipse 20% 25% at 20% 80%, rgba(197,113,58,0.15) 0%, transparent 50%);
+  animation: heroGlowDrift 20s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes heroGlowDrift {
+  0%   { transform: translate(  0%,   0%) scale(1.00); }
+  18%  { transform: translate( 11%,  -9%) scale(1.05); }
+  38%  { transform: translate( -7%,  13%) scale(0.96); }
+  58%  { transform: translate( 15%,   7%) scale(1.07); }
+  78%  { transform: translate( -4%,  -8%) scale(1.02); }
+  100% { transform: translate(  0%,   0%) scale(1.00); }
+}
+
+/* Bokeh — soft ambient light orbs like a candlelit dining room */
+.auth-hero-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle 5px  at 17% 73%, rgba(201,176,104,0.80) 0%, transparent 100%),
+    radial-gradient(circle 3px  at 77% 17%, rgba(244,239,230,0.60) 0%, transparent 100%),
+    radial-gradient(circle 7px  at 54% 61%, rgba(197,113,58, 0.55) 0%, transparent 100%),
+    radial-gradient(circle 2px  at 89% 43%, rgba(201,176,104,0.70) 0%, transparent 100%),
+    radial-gradient(circle 4px  at 31% 37%, rgba(244,239,230,0.40) 0%, transparent 100%),
+    radial-gradient(circle 6px  at 63% 87%, rgba(197,113,58, 0.50) 0%, transparent 100%),
+    radial-gradient(circle 2px  at 11% 27%, rgba(201,176,104,0.60) 0%, transparent 100%),
+    radial-gradient(circle 3px  at 92% 79%, rgba(244,239,230,0.45) 0%, transparent 100%),
+    radial-gradient(circle 9px  at 41% 14%, rgba(197,113,58, 0.28) 0%, transparent 100%),
+    radial-gradient(circle 2px  at 78% 54%, rgba(201,176,104,0.65) 0%, transparent 100%),
+    radial-gradient(circle 4px  at 58% 33%, rgba(244,239,230,0.30) 0%, transparent 100%),
+    radial-gradient(circle 3px  at 25% 58%, rgba(197,113,58, 0.45) 0%, transparent 100%);
+  filter: blur(1.8px);
+  animation: bokehFloat 30s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes bokehFloat {
+  0%,  100% { transform: translateY(  0px) translateX(  0px) scale(1.00); opacity: 0.82; }
+  20%        { transform: translateY(-16px) translateX(  6px) scale(1.04); opacity: 1.00; }
+  45%        { transform: translateY( -9px) translateX(-11px) scale(0.97); opacity: 0.68; }
+  70%        { transform: translateY(-23px) translateX(  8px) scale(1.05); opacity: 0.90; }
+  88%        { transform: translateY( -6px) translateX( -4px) scale(1.01); opacity: 0.78; }
+}
+
 .auth-hero-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, rgba(11,9,8,0.35) 0%, rgba(11,9,8,0.1) 35%, #0B0908 95%);
+  animation: candleFlicker 9s ease-in-out infinite alternate;
 }
+
+@keyframes candleFlicker {
+  0%   { opacity: 0.90; }
+  28%  { opacity: 1.00; }
+  54%  { opacity: 0.94; }
+  79%  { opacity: 0.97; }
+  100% { opacity: 0.92; }
+}
+
+/* ── Video/GIF hero slot ──
+   Place images/hero.mp4 (or .gif as <img>) and uncomment in index.html.
+   The video takes over; the CSS animation hides automatically. ── */
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.hero-video + .auth-hero-photo { display: none; }
 .auth-entrance-top {
   position: relative;
   z-index: 2;
